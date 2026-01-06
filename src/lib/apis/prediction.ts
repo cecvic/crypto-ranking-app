@@ -1,6 +1,8 @@
-// AI/ML Price Prediction APIs - CoinCodex, Token Metrics
 import axios from 'axios';
 import { AIPrediction } from '../types';
+import { generateLocalPrediction, getBatchLocalPredictions } from './local-prediction';
+
+const USE_LOCAL_PREDICTION = process.env.USE_LOCAL_PREDICTION === 'true';
 
 // ============================================
 // COINCODEX API (FREE - No API Key Required)
@@ -131,31 +133,49 @@ export async function getTokenMetricsPrediction(
   }
 }
 
-// ============================================
-// AGGREGATED AI PREDICTION
-// ============================================
 export async function getAIPrediction(
   coinId: string,
   symbol: string,
-  currentPrice: number
+  currentPrice: number,
+  historicalPrices: number[] = [],
+  priceChange24h: number = 0,
+  priceChange7d: number = 0
 ): Promise<AIPrediction> {
-  // Try multiple sources
+  if (USE_LOCAL_PREDICTION) {
+    return generateLocalPrediction(
+      coinId,
+      symbol,
+      currentPrice,
+      historicalPrices,
+      priceChange24h,
+      priceChange7d
+    );
+  }
+
   const [coinCodex, tokenMetrics] = await Promise.all([
     getCoinCodexPrediction(symbol).catch(() => null),
     getTokenMetricsPrediction(symbol).catch(() => null),
   ]);
 
-  // Prefer Token Metrics (more accurate) if available
   if (tokenMetrics) {
     return tokenMetrics;
   }
 
-  // Fall back to CoinCodex
   if (coinCodex) {
     return coinCodex;
   }
 
-  // Generate reasonable default based on current market conditions
+  if (historicalPrices.length > 0) {
+    return generateLocalPrediction(
+      coinId,
+      symbol,
+      currentPrice,
+      historicalPrices,
+      priceChange24h,
+      priceChange7d
+    );
+  }
+
   return generateDefaultPrediction(coinId, symbol, currentPrice);
 }
 
@@ -195,20 +215,42 @@ function generateDefaultPrediction(
   };
 }
 
-// Batch predictions for efficiency
 export async function getBatchPredictions(
-  coins: Array<{ id: string; symbol: string; price: number }>
+  coins: Array<{ 
+    id: string; 
+    symbol: string; 
+    price: number;
+    sparkline?: number[];
+    priceChange24h?: number;
+    priceChange7d?: number;
+  }>
 ): Promise<Map<string, AIPrediction>> {
+  if (USE_LOCAL_PREDICTION) {
+    return getBatchLocalPredictions(coins.map(coin => ({
+      id: coin.id,
+      symbol: coin.symbol,
+      price: coin.price,
+      sparkline: coin.sparkline,
+      priceChange24h: coin.priceChange24h,
+      priceChange7d: coin.priceChange7d,
+    })));
+  }
+
   const results = new Map<string, AIPrediction>();
 
-  // Process in parallel, but with some concurrency limit
   const batchSize = 5;
   for (let i = 0; i < coins.length; i += batchSize) {
     const batch = coins.slice(i, i + batchSize);
     const predictions = await Promise.all(
       batch.map(coin => 
-        getAIPrediction(coin.id, coin.symbol, coin.price)
-          .catch(() => generateDefaultPrediction(coin.id, coin.symbol, coin.price))
+        getAIPrediction(
+          coin.id, 
+          coin.symbol, 
+          coin.price,
+          coin.sparkline || [],
+          coin.priceChange24h || 0,
+          coin.priceChange7d || 0
+        ).catch(() => generateDefaultPrediction(coin.id, coin.symbol, coin.price))
       )
     );
 

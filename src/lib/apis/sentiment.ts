@@ -1,6 +1,10 @@
-// Sentiment APIs - LunarCrush, CryptoPanic, Alternative.me Fear & Greed
+// Sentiment APIs - Local analysis + LunarCrush, CryptoPanic, Alternative.me Fear & Greed
 import axios from 'axios';
 import { SentimentData, FearGreedIndex } from '../types';
+import { generateSentimentData, getQuickSentiment, analyzeMultipleTexts } from './local-sentiment';
+import { aggregateTextData, fetchCoinGeckoCommunityData } from './free-data-sources';
+
+const USE_LOCAL_SENTIMENT = process.env.USE_LOCAL_SENTIMENT === 'true';
 
 // ============================================
 // FEAR & GREED INDEX (Alternative.me) - FREE
@@ -173,21 +177,68 @@ export async function getCryptoPanicSentiment(
   }
 }
 
-// ============================================
-// AGGREGATED SENTIMENT SCORE
-// ============================================
+export async function getLocalSentiment(
+  coinId: string,
+  symbol: string,
+  priceChange24h: number = 0,
+  priceChange7d: number = 0,
+  volume24h: number = 0,
+  avgVolume: number = 0
+): Promise<SentimentData> {
+  try {
+    const [textData, communityData] = await Promise.all([
+      aggregateTextData(coinId, symbol),
+      fetchCoinGeckoCommunityData(coinId),
+    ]);
+
+    if (textData.length > 0) {
+      const texts = textData.map(item => item.text);
+      const sentimentData = generateSentimentData(coinId, texts);
+      
+      if (communityData) {
+        sentimentData.socialScore = Math.round(
+          (sentimentData.socialScore * 0.6) + (communityData.sentiment * 0.4)
+        );
+      }
+      
+      return sentimentData;
+    }
+
+    if (communityData) {
+      return {
+        coinId,
+        socialScore: communityData.sentiment,
+        socialVolume: communityData.twitterFollowers + communityData.redditSubscribers,
+        sentimentPositive: communityData.sentiment,
+        sentimentNegative: 100 - communityData.sentiment,
+        source: 'local',
+      };
+    }
+
+    return getQuickSentiment(coinId, priceChange24h, priceChange7d, volume24h, avgVolume);
+  } catch {
+    return getQuickSentiment(coinId, priceChange24h, priceChange7d, volume24h, avgVolume);
+  }
+}
+
 export async function getAggregatedSentiment(
   coinId: string,
-  symbol: string
+  symbol: string,
+  priceChange24h: number = 0,
+  priceChange7d: number = 0,
+  volume24h: number = 0,
+  avgVolume: number = 0
 ): Promise<SentimentData> {
-  // Fetch from multiple sources in parallel
+  if (USE_LOCAL_SENTIMENT) {
+    return getLocalSentiment(coinId, symbol, priceChange24h, priceChange7d, volume24h, avgVolume);
+  }
+
   const [fearGreed, lunarCrush, cryptoPanic] = await Promise.all([
     getFearGreedIndex(),
     getLunarCrushSentiment(symbol),
     getCryptoPanicSentiment(symbol),
   ]);
 
-  // Default sentiment if all sources fail
   const defaultSentiment: SentimentData = {
     coinId,
     socialScore: 50,
@@ -197,7 +248,6 @@ export async function getAggregatedSentiment(
     source: 'alternative',
   };
 
-  // Priority: LunarCrush > CryptoPanic > Fear & Greed (global)
   if (lunarCrush) {
     return lunarCrush;
   }
@@ -213,13 +263,48 @@ export async function getAggregatedSentiment(
     };
   }
 
-  // Fall back to global Fear & Greed
   return {
     ...defaultSentiment,
     socialScore: fearGreed.value,
     sentimentPositive: fearGreed.value,
     sentimentNegative: 100 - fearGreed.value,
   };
+}
+
+export async function getLocalSentimentBatch(
+  coins: Array<{
+    id: string;
+    symbol: string;
+    priceChange24h?: number;
+    priceChange7d?: number;
+    volume24h?: number;
+    avgVolume?: number;
+  }>
+): Promise<Map<string, SentimentData>> {
+  const results = new Map<string, SentimentData>();
+  
+  const batchSize = 5;
+  for (let i = 0; i < coins.length; i += batchSize) {
+    const batch = coins.slice(i, i + batchSize);
+    const sentiments = await Promise.all(
+      batch.map(coin =>
+        getLocalSentiment(
+          coin.id,
+          coin.symbol,
+          coin.priceChange24h || 0,
+          coin.priceChange7d || 0,
+          coin.volume24h || 0,
+          coin.avgVolume || 0
+        )
+      )
+    );
+    
+    sentiments.forEach((sentiment, idx) => {
+      results.set(batch[idx].symbol.toUpperCase(), sentiment);
+    });
+  }
+  
+  return results;
 }
 
 // ============================================

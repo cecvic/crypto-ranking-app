@@ -28,7 +28,7 @@ export interface SentimentData {
   sentimentNegative: number;  // Percentage
   galaxyScore?: number;       // LunarCrush specific
   altRank?: number;           // LunarCrush specific
-  source: 'lunarcrush' | 'cryptopanic' | 'alternative';
+  source: 'lunarcrush' | 'cryptopanic' | 'alternative' | 'local';
 }
 
 export interface TechnicalAnalysis {
