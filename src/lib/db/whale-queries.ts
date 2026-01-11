@@ -8,7 +8,8 @@ import {
   type TokenMapping,
   type KnownAddress,
 } from './schema';
-import { eq, and, gte, sql, inArray } from 'drizzle-orm';
+import { eq, and, gte, sql, inArray, desc } from 'drizzle-orm';
+import { type WhaleEvent } from './schema';
 
 // ============================================
 // INSERT OPERATIONS
@@ -178,6 +179,133 @@ export async function getBatchWhaleMetrics(
   }
 
   return results;
+}
+
+// ============================================
+// WHALE ALERTS PAGE QUERIES
+// ============================================
+
+/**
+ * Get recent whale events with optional filters
+ */
+export async function getRecentWhaleEvents(
+  limit: number = 50,
+  filters?: {
+    coinGeckoId?: string;
+    transferType?: string;
+    minValueUsd?: number;
+  }
+): Promise<WhaleEvent[]> {
+  const conditions = [];
+
+  if (filters?.coinGeckoId) {
+    conditions.push(eq(whaleEvents.coinGeckoId, filters.coinGeckoId));
+  }
+  if (filters?.transferType) {
+    conditions.push(eq(whaleEvents.transferType, filters.transferType));
+  }
+  if (filters?.minValueUsd) {
+    conditions.push(gte(whaleEvents.valueUsd, filters.minValueUsd.toString()));
+  }
+
+  const query = getDb()
+    .select()
+    .from(whaleEvents)
+    .orderBy(desc(whaleEvents.blockTimestamp))
+    .limit(limit);
+
+  if (conditions.length > 0) {
+    return query.where(and(...conditions));
+  }
+
+  return query;
+}
+
+/**
+ * Get top whale movements by USD value
+ */
+export async function getTopWhaleMovements(
+  limit: number = 10,
+  hours: number = 24
+): Promise<WhaleEvent[]> {
+  const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+  return getDb()
+    .select()
+    .from(whaleEvents)
+    .where(gte(whaleEvents.blockTimestamp, cutoff))
+    .orderBy(desc(whaleEvents.valueUsd))
+    .limit(limit);
+}
+
+/**
+ * Aggregate metrics response interface
+ */
+export interface WhaleAggregateMetrics {
+  totalTransactions: number;
+  totalVolumeUsd: number;
+  exchangeInflow: number;
+  exchangeOutflow: number;
+  netFlow: number;
+  topTokensByVolume: Array<{
+    coinGeckoId: string;
+    symbol: string;
+    volume: number;
+    transactionCount: number;
+  }>;
+}
+
+/**
+ * Get aggregate metrics with token breakdown
+ */
+export async function getWhaleAggregateMetrics(
+  hours: number = 24
+): Promise<WhaleAggregateMetrics> {
+  const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+  // Get aggregate stats
+  const [aggregates] = await getDb()
+    .select({
+      totalTransactions: sql<number>`count(*)::int`,
+      totalVolumeUsd: sql<number>`COALESCE(sum(${whaleEvents.valueUsd}::numeric), 0)::float`,
+      exchangeInflow: sql<number>`COALESCE(sum(CASE WHEN ${whaleEvents.transferType} = 'exchange_inflow' THEN ${whaleEvents.valueUsd}::numeric ELSE 0 END), 0)::float`,
+      exchangeOutflow: sql<number>`COALESCE(sum(CASE WHEN ${whaleEvents.transferType} = 'exchange_outflow' THEN ${whaleEvents.valueUsd}::numeric ELSE 0 END), 0)::float`,
+    })
+    .from(whaleEvents)
+    .where(gte(whaleEvents.blockTimestamp, cutoff));
+
+  // Get top tokens by volume
+  const topTokens = await getDb()
+    .select({
+      coinGeckoId: whaleEvents.coinGeckoId,
+      symbol: whaleEvents.tokenSymbol,
+      volume: sql<number>`COALESCE(sum(${whaleEvents.valueUsd}::numeric), 0)::float`,
+      transactionCount: sql<number>`count(*)::int`,
+    })
+    .from(whaleEvents)
+    .where(
+      and(
+        gte(whaleEvents.blockTimestamp, cutoff),
+        sql`${whaleEvents.coinGeckoId} IS NOT NULL`
+      )
+    )
+    .groupBy(whaleEvents.coinGeckoId, whaleEvents.tokenSymbol)
+    .orderBy(desc(sql`sum(${whaleEvents.valueUsd}::numeric)`))
+    .limit(10);
+
+  return {
+    totalTransactions: aggregates?.totalTransactions || 0,
+    totalVolumeUsd: aggregates?.totalVolumeUsd || 0,
+    exchangeInflow: aggregates?.exchangeInflow || 0,
+    exchangeOutflow: aggregates?.exchangeOutflow || 0,
+    netFlow: (aggregates?.exchangeOutflow || 0) - (aggregates?.exchangeInflow || 0),
+    topTokensByVolume: topTokens.map((t) => ({
+      coinGeckoId: t.coinGeckoId || '',
+      symbol: t.symbol || '',
+      volume: t.volume,
+      transactionCount: t.transactionCount,
+    })),
+  };
 }
 
 // ============================================

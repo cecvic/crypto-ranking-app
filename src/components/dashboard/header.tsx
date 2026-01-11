@@ -55,6 +55,12 @@ export function DashboardHeader() {
           >
             Signals
           </Link>
+          <Link
+            href="/dashboard/whale-alerts"
+            className="text-foreground/60 hover:text-foreground transition-colors"
+          >
+            Whale Alerts
+          </Link>
         </nav>
 
         {/* Search */}
@@ -102,6 +108,9 @@ export function DashboardHeader() {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/dashboard/signals">Signals</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/whale-alerts">Whale Alerts</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
