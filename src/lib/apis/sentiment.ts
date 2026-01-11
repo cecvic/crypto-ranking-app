@@ -1,8 +1,7 @@
-// Sentiment APIs - Local analysis + LunarCrush, CryptoPanic, Alternative.me Fear & Greed
 import axios from 'axios';
 import { SentimentData, FearGreedIndex } from '../types';
-import { generateSentimentData, getQuickSentiment, analyzeMultipleTexts } from './local-sentiment';
-import { aggregateTextData, fetchCoinGeckoCommunityData } from './free-data-sources';
+import { generateSentimentData, getQuickSentiment } from './local-sentiment';
+import { aggregateTextData, fetchCoinGeckoCommunityData, batchGetTextDataForCoins } from './free-data-sources';
 
 const USE_LOCAL_SENTIMENT = process.env.USE_LOCAL_SENTIMENT === 'true';
 
@@ -283,25 +282,27 @@ export async function getLocalSentimentBatch(
 ): Promise<Map<string, SentimentData>> {
   const results = new Map<string, SentimentData>();
   
-  const batchSize = 5;
-  for (let i = 0; i < coins.length; i += batchSize) {
-    const batch = coins.slice(i, i + batchSize);
-    const sentiments = await Promise.all(
-      batch.map(coin =>
-        getLocalSentiment(
-          coin.id,
-          coin.symbol,
-          coin.priceChange24h || 0,
-          coin.priceChange7d || 0,
-          coin.volume24h || 0,
-          coin.avgVolume || 0
-        )
-      )
-    );
+  const textDataMap = await batchGetTextDataForCoins(
+    coins.map(c => ({ id: c.id, symbol: c.symbol }))
+  );
+  
+  for (const coin of coins) {
+    const texts = textDataMap.get(coin.symbol.toUpperCase()) || [];
     
-    sentiments.forEach((sentiment, idx) => {
-      results.set(batch[idx].symbol.toUpperCase(), sentiment);
-    });
+    if (texts.length > 0) {
+      const textStrings = texts.map(t => t.text);
+      const sentiment = generateSentimentData(coin.id, textStrings);
+      results.set(coin.symbol.toUpperCase(), sentiment);
+    } else {
+      const fallback = getQuickSentiment(
+        coin.id,
+        coin.priceChange24h || 0,
+        coin.priceChange7d || 0,
+        coin.volume24h || 0,
+        coin.avgVolume || 0
+      );
+      results.set(coin.symbol.toUpperCase(), fallback);
+    }
   }
   
   return results;
