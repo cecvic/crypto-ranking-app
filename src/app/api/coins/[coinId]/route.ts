@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { getCoinById, getCoinChart } from '@/lib/apis/coingecko';
 import { getAggregatedSentiment } from '@/lib/apis/sentiment';
 import { getTechnicalAnalysis } from '@/lib/apis/technical';
@@ -11,6 +12,12 @@ export async function GET(
   { params }: { params: Promise<{ coinId: string }> }
 ) {
   try {
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { coinId } = await params;
 
     // Fetch coin data from CoinGecko

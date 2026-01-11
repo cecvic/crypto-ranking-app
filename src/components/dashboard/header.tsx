@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { UserButton } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,7 +13,6 @@ import {
 import {
   LineChartIcon,
   SearchIcon,
-  SettingsIcon,
   BellIcon,
   MenuIcon,
 } from 'lucide-react';
@@ -22,7 +22,7 @@ export function DashboardHeader() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 mr-6">
+        <Link href="/dashboard" className="flex items-center gap-2 mr-6">
           <LineChartIcon className="h-6 w-6 text-primary" />
           <span className="font-bold text-lg hidden sm:inline-block">
             CryptoRank
@@ -32,25 +32,25 @@ export function DashboardHeader() {
         {/* Navigation */}
         <nav className="hidden md:flex items-center gap-6 text-sm">
           <Link
-            href="/"
+            href="/dashboard"
             className="text-foreground/60 hover:text-foreground transition-colors"
           >
             Dashboard
           </Link>
           <Link
-            href="/rankings"
+            href="/dashboard/rankings"
             className="text-foreground/60 hover:text-foreground transition-colors"
           >
             Rankings
           </Link>
           <Link
-            href="/screener"
+            href="/dashboard/screener"
             className="text-foreground/60 hover:text-foreground transition-colors"
           >
             Screener
           </Link>
           <Link
-            href="/signals"
+            href="/dashboard/signals"
             className="text-foreground/60 hover:text-foreground transition-colors"
           >
             Signals
@@ -73,10 +73,15 @@ export function DashboardHeader() {
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
           </Button>
 
-          {/* Settings */}
-          <Button variant="ghost" size="icon">
-            <SettingsIcon className="h-5 w-5" />
-          </Button>
+          {/* User Menu */}
+          <UserButton
+            afterSignOutUrl="/"
+            appearance={{
+              elements: {
+                avatarBox: 'h-8 w-8',
+              },
+            }}
+          />
 
           {/* Mobile Menu */}
           <DropdownMenu>
@@ -87,16 +92,16 @@ export function DashboardHeader() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href="/dashboard">Dashboard</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/rankings">Rankings</Link>
+                <Link href="/dashboard/rankings">Rankings</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/screener">Screener</Link>
+                <Link href="/dashboard/screener">Screener</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/signals">Signals</Link>
+                <Link href="/dashboard/signals">Signals</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

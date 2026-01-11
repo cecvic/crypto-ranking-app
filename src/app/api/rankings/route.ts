@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { getTopCoins } from '@/lib/apis/coingecko';
 import { getLunarCrushBatch, getFearGreedIndex, getLocalSentimentBatch } from '@/lib/apis/sentiment';
 import { getTechnicalAnalysis } from '@/lib/apis/technical';
@@ -29,6 +30,12 @@ const SENTIMENT_CACHE_DURATION = 900000; // 15 min cache for sentiment
 
 export async function GET() {
   try {
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const now = Date.now();
 
     // ============================================
