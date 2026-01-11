@@ -76,20 +76,20 @@ export function RankingsTable({ rankings, isLoading }: RankingsTableProps) {
           bVal = b.scores.overall;
           break;
         case 'sentiment':
-          aVal = a.scores.sentiment;
-          bVal = b.scores.sentiment;
+          aVal = a.scores.sentiment ?? 50;
+          bVal = b.scores.sentiment ?? 50;
           break;
         case 'technical':
-          aVal = a.scores.technical;
-          bVal = b.scores.technical;
+          aVal = a.scores.technical ?? 50;
+          bVal = b.scores.technical ?? 50;
           break;
         case 'whale':
-          aVal = a.scores.whale;
-          bVal = b.scores.whale;
+          aVal = a.scores.whale ?? 50;
+          bVal = b.scores.whale ?? 50;
           break;
         case 'ai':
-          aVal = a.scores.ai;
-          bVal = b.scores.ai;
+          aVal = a.scores.ai ?? 50;
+          bVal = b.scores.ai ?? 50;
           break;
         default:
           return 0;
@@ -296,17 +296,17 @@ function RankingRow({ ranking }: { ranking: CoinRanking }) {
       </TableCell>
 
       {/* Individual Scores */}
-      <TableCell className={getScoreColor(scores.sentiment)}>
-        {scores.sentiment.toFixed(0)}
+      <TableCell className={getScoreColor(scores.sentiment ?? 50)}>
+        {(scores.sentiment ?? 50).toFixed(0)}
       </TableCell>
-      <TableCell className={getScoreColor(scores.technical)}>
-        {scores.technical.toFixed(0)}
+      <TableCell className={getScoreColor(scores.technical ?? 50)}>
+        {(scores.technical ?? 50).toFixed(0)}
       </TableCell>
-      <TableCell className={getScoreColor(scores.whale)}>
-        {scores.whale.toFixed(0)}
+      <TableCell className={getScoreColor(scores.whale ?? 50)}>
+        {(scores.whale ?? 50).toFixed(0)}
       </TableCell>
-      <TableCell className={getScoreColor(scores.ai)}>
-        {scores.ai.toFixed(0)}
+      <TableCell className={getScoreColor(scores.ai ?? 50)}>
+        {(scores.ai ?? 50).toFixed(0)}
       </TableCell>
 
       {/* Signal */}

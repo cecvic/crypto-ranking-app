@@ -108,11 +108,11 @@ export interface RankingWeights {
 export interface CoinRanking {
   coin: CoinPrice;
   scores: {
-    sentiment: number;
-    technical: number;
-    whale: number;
-    ai: number;
-    pricePerformance: number;
+    sentiment?: number;
+    technical?: number;
+    whale?: number;
+    ai?: number;
+    pricePerformance?: number;
     overall: number;
   };
   signals: {

@@ -1,5 +1,6 @@
 // CoinGecko API - Price data and market information
 import axios from 'axios';
+import axiosRetry from 'axios-retry';
 import { CoinPrice, ChartData } from '../types';
 
 const BASE_URL = 'https://api.coingecko.com/api/v3';
@@ -7,9 +8,24 @@ const BASE_URL = 'https://api.coingecko.com/api/v3';
 // Rate limiting: CoinGecko free tier allows 10-30 calls/minute
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 15000,
   headers: {
     'Accept': 'application/json',
+  },
+});
+
+// Add retry logic with exponential backoff (Tiger 4 mitigation)
+axiosRetry(api, {
+  retries: 3,
+  retryDelay: axiosRetry.exponentialDelay,
+  retryCondition: (error) => {
+    // Retry on network errors and rate limits
+    return axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+           error.response?.status === 429 ||  // Rate limited
+           error.response?.status === 503;    // Service unavailable
+  },
+  onRetry: (retryCount, error) => {
+    console.log(`[CoinGecko] Retry attempt ${retryCount} after error: ${error.message}`);
   },
 });
 

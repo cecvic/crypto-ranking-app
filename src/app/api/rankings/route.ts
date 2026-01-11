@@ -6,35 +6,99 @@ import { getWhaleActivity } from '@/lib/apis/whale';
 import { getAIPrediction } from '@/lib/apis/prediction';
 import { calculateRankingScore, rankCoins } from '@/lib/ranking/calculator';
 import { CoinRanking, CoinPrice, SentimentData } from '@/lib/types';
+import {
+  getCachedRankings,
+  setCachedRankings,
+  getCachedFearGreed,
+  setCachedFearGreed,
+} from '@/lib/cache/strategy';
+import { getCached, setCached, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/redis';
 
+// Feature flags
 const USE_LOCAL_SENTIMENT = process.env.USE_LOCAL_SENTIMENT === 'true';
+const USE_PERSISTENT_STORAGE = process.env.USE_PERSISTENT_STORAGE !== 'false';
 
-let cachedRankings: CoinRanking[] = [];
-let cachedSentiment: Map<string, SentimentData> = new Map();
-let lastFetchTime = 0;
-let lastSentimentFetch = 0;
+// In-memory fallback (for local dev without database)
+let inMemoryCachedRankings: CoinRanking[] = [];
+let inMemoryCachedSentiment: Map<string, SentimentData> = new Map();
+let inMemoryLastFetchTime = 0;
+let inMemoryLastSentimentFetch = 0;
+
 const CACHE_DURATION = 60000;
-const SENTIMENT_CACHE_DURATION = 900000; // 15 min cache for sentiment (rate limit protection)
+const SENTIMENT_CACHE_DURATION = 900000; // 15 min cache for sentiment
 
 export async function GET() {
   try {
     const now = Date.now();
 
-    if (cachedRankings.length > 0 && now - lastFetchTime < CACHE_DURATION) {
+    // ============================================
+    // L1/L2 CACHE CHECK (Redis -> PostgreSQL)
+    // ============================================
+    if (USE_PERSISTENT_STORAGE) {
+      try {
+        const cached = await getCachedRankings();
+        if (cached && cached.rankings.length > 0) {
+          const cacheAge = now - new Date(cached.timestamp).getTime();
+          if (cacheAge < CACHE_DURATION) {
+            return NextResponse.json({
+              data: cached.rankings,
+              cached: true,
+              timestamp: cached.timestamp,
+              fearGreed: cached.fearGreed,
+              source: 'persistent',
+            });
+          }
+        }
+      } catch (error) {
+        console.warn('Persistent cache read failed, falling back to in-memory:', error);
+      }
+    }
+
+    // ============================================
+    // IN-MEMORY FALLBACK CHECK
+    // ============================================
+    if (inMemoryCachedRankings.length > 0 && now - inMemoryLastFetchTime < CACHE_DURATION) {
       return NextResponse.json({
-        data: cachedRankings,
+        data: inMemoryCachedRankings,
         cached: true,
-        timestamp: new Date(lastFetchTime).toISOString(),
+        timestamp: new Date(inMemoryLastFetchTime).toISOString(),
+        source: 'memory',
       });
     }
 
+    // ============================================
+    // FRESH DATA FETCH
+    // ============================================
     const coins = await getTopCoins(100);
-    const fearGreed = await getFearGreedIndex();
 
-    if (now - lastSentimentFetch > SENTIMENT_CACHE_DURATION) {
+    // Get Fear & Greed (with caching)
+    let fearGreed = USE_PERSISTENT_STORAGE ? await getCachedFearGreed() : null;
+    if (!fearGreed) {
+      fearGreed = await getFearGreedIndex();
+      if (USE_PERSISTENT_STORAGE) {
+        setCachedFearGreed(fearGreed).catch(() => {});
+      }
+    }
+
+    // Get sentiment data (with Redis caching)
+    let sentimentMap: Map<string, SentimentData> = new Map();
+
+    if (USE_PERSISTENT_STORAGE) {
+      // Try Redis cache for sentiment batch
+      const cachedSentiment = await getCached<Record<string, SentimentData>>(
+        CACHE_KEYS.SENTIMENT_BATCH
+      );
+      if (cachedSentiment) {
+        sentimentMap = new Map(Object.entries(cachedSentiment));
+      }
+    }
+
+    // Fetch fresh sentiment if cache is empty or stale
+    if (sentimentMap.size === 0 && now - inMemoryLastSentimentFetch > SENTIMENT_CACHE_DURATION) {
       let sentimentBatch: Map<string, SentimentData> = new Map();
-      
+
       if (USE_LOCAL_SENTIMENT) {
+        // Use local sentiment analysis
         console.log('[Rankings] Using LOCAL sentiment analysis...');
         const coinData = coins.map((c: CoinPrice) => ({
           id: c.id,
@@ -50,31 +114,47 @@ export async function GET() {
         });
         console.log(`[Rankings] Local sentiment fetched for ${sentimentBatch.size} coins`);
       } else {
+        // Use LunarCrush API
         const symbols = coins.map((c: CoinPrice) => c.symbol.toUpperCase());
         sentimentBatch = await getLunarCrushBatch(symbols).catch(() => new Map());
       }
-      
+
       if (sentimentBatch.size > 0) {
-        cachedSentiment = sentimentBatch;
-        lastSentimentFetch = now;
+        sentimentMap = sentimentBatch;
+        inMemoryCachedSentiment = sentimentBatch;
+        inMemoryLastSentimentFetch = now;
+
+        // Cache in Redis
+        if (USE_PERSISTENT_STORAGE) {
+          const sentimentObj = Object.fromEntries(sentimentBatch);
+          setCached(CACHE_KEYS.SENTIMENT_BATCH, sentimentObj, CACHE_TTL.SENTIMENT_BATCH).catch(
+            () => {}
+          );
+        }
       }
+    } else if (sentimentMap.size === 0) {
+      // Use in-memory fallback
+      sentimentMap = inMemoryCachedSentiment;
     }
 
+    // ============================================
+    // COMPUTE RANKINGS
+    // ============================================
     const rankings: Omit<CoinRanking, 'rank' | 'rankChange'>[] = [];
     const batchSize = 10;
 
     for (let i = 0; i < coins.length; i += batchSize) {
       const batch = coins.slice(i, i + batchSize);
-      
+
       const batchResults = await Promise.all(
         batch.map(async (coin: CoinPrice) => {
           // Use cached sentiment or create fallback with Fear & Greed
-          const sentiment = cachedSentiment.get(coin.symbol.toUpperCase()) || {
+          const sentiment = sentimentMap.get(coin.symbol.toUpperCase()) || {
             coinId: coin.id,
-            socialScore: fearGreed.value,
+            socialScore: fearGreed!.value,
             socialVolume: 0,
-            sentimentPositive: fearGreed.value,
-            sentimentNegative: 100 - fearGreed.value,
+            sentimentPositive: fearGreed!.value,
+            sentimentNegative: 100 - fearGreed!.value,
             source: 'alternative' as const,
           };
 
@@ -105,30 +185,66 @@ export async function GET() {
     }
 
     const rankedCoins = rankCoins(rankings);
-    cachedRankings = rankedCoins;
-    lastFetchTime = now;
+
+    // ============================================
+    // UPDATE CACHES
+    // ============================================
+
+    // In-memory (always, for fallback)
+    inMemoryCachedRankings = rankedCoins;
+    inMemoryLastFetchTime = now;
+
+    // Persistent storage (if enabled)
+    if (USE_PERSISTENT_STORAGE) {
+      // Fire-and-forget to avoid blocking response
+      setCachedRankings(rankedCoins, fearGreed!).catch((error) => {
+        console.error('Failed to persist rankings:', error);
+      });
+    }
 
     return NextResponse.json({
       data: rankedCoins,
       cached: false,
       timestamp: new Date().toISOString(),
       fearGreed,
+      source: USE_PERSISTENT_STORAGE ? 'fresh_persistent' : 'fresh_memory',
     });
   } catch (error) {
     console.error('Rankings API error:', error);
 
-    if (cachedRankings.length > 0) {
+    // ============================================
+    // ERROR FALLBACK: Try all cache layers
+    // ============================================
+
+    // Try persistent cache
+    if (USE_PERSISTENT_STORAGE) {
+      try {
+        const cached = await getCachedRankings();
+        if (cached && cached.rankings.length > 0) {
+          return NextResponse.json({
+            data: cached.rankings,
+            cached: true,
+            timestamp: cached.timestamp,
+            error: 'Using cached data due to API error',
+            source: 'persistent_fallback',
+          });
+        }
+      } catch {
+        // Continue to in-memory fallback
+      }
+    }
+
+    // Try in-memory cache
+    if (inMemoryCachedRankings.length > 0) {
       return NextResponse.json({
-        data: cachedRankings,
+        data: inMemoryCachedRankings,
         cached: true,
-        timestamp: new Date(lastFetchTime).toISOString(),
+        timestamp: new Date(inMemoryLastFetchTime).toISOString(),
         error: 'Using cached data due to API error',
+        source: 'memory_fallback',
       });
     }
 
-    return NextResponse.json(
-      { error: 'Failed to fetch rankings' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch rankings' }, { status: 500 });
   }
 }

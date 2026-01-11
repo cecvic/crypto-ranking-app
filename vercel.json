@@ -1,0 +1,33 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "s-maxage=60, stale-while-revalidate=300"
+        }
+      ]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/collect-prices",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/collect-sentiment",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/compute-rankings",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/cleanup",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

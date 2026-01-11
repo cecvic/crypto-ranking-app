@@ -1,0 +1,83 @@
+---
+session: general
+date: 2026-01-11
+status: complete
+outcome: SUCCEEDED
+---
+
+goal: Implemented Phase 2 background data collection with QStash cron jobs
+now: Deploy to Vercel (Phase 4) or add more API keys for enhanced data
+
+test: |
+  curl http://localhost:3000/api/cron/collect-prices
+  curl http://localhost:3000/api/cron/compute-rankings
+
+done_this_session:
+  - task: Created QStash client and signature verification wrapper
+    files: [src/lib/qstash/client.ts, src/lib/qstash/verify.ts]
+  - task: Created distributed rate limiter using Redis
+    files: [src/lib/rate-limiter/distributed.ts]
+  - task: Created 4 cron endpoints for background data collection
+    files:
+      - src/app/api/cron/collect-prices/route.ts
+      - src/app/api/cron/collect-sentiment/route.ts
+      - src/app/api/cron/compute-rankings/route.ts
+      - src/app/api/cron/cleanup/route.ts
+  - task: Added axios-retry with exponential backoff to CoinGecko API
+    files: [src/lib/apis/coingecko.ts]
+  - task: Created vercel.json with cron configuration
+    files: [vercel.json]
+  - task: Added QStash credentials to environment
+    files: [.env.local]
+
+blockers: []
+
+questions:
+  - Should Phase 3 (Monorepo) be done before or after Vercel deployment?
+
+decisions:
+  - qstash_over_vercel_cron: QStash has 5-min timeout vs Vercel Hobby 10s limit
+  - dev_bypass_for_testing: verifyCronRequestWithDevBypass allows local GET testing
+  - signature_verification: All cron endpoints protected against unauthorized access
+
+findings:
+  - cron_performance: collect-prices ~4s, compute-rankings ~12s (within limits)
+  - snapshot_persistence: Rankings saved to Neon PostgreSQL with snapshot ID tracking
+  - fear_greed_value: Currently at 29 (Fear) from Alternative.me API
+
+worked:
+  - Lazy-loaded Redis/QStash clients prevent build-time errors
+  - Local sentiment and prediction provide real scores without external APIs
+  - axios-retry handles transient CoinGecko failures gracefully
+
+failed: []
+
+next:
+  - Deploy to Vercel (Phase 4)
+  - Add environment variables in Vercel dashboard
+  - Test cron jobs in production
+  - Consider Phase 3 monorepo restructure after stable production
+
+files:
+  created:
+    - src/lib/qstash/client.ts
+    - src/lib/qstash/verify.ts
+    - src/lib/rate-limiter/distributed.ts
+    - src/app/api/cron/collect-prices/route.ts
+    - src/app/api/cron/collect-sentiment/route.ts
+    - src/app/api/cron/compute-rankings/route.ts
+    - src/app/api/cron/cleanup/route.ts
+    - vercel.json
+  modified:
+    - src/lib/cache/redis.ts
+    - src/lib/apis/coingecko.ts
+    - .env.local
+
+context:
+  phase1_complete: Database (Neon) + Cache (Upstash Redis) configured
+  phase2_complete: Background jobs with QStash cron endpoints
+  credentials_configured:
+    - DATABASE_URL (Neon PostgreSQL)
+    - UPSTASH_REDIS_REST_URL/TOKEN
+    - QSTASH_TOKEN and signing keys
+  plan_location: thoughts/shared/plans/production-deployment-architecture.md
