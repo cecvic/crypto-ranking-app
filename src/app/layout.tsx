@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { QueryProvider } from "@/providers/query-provider";
 
-const inter = Inter({ subsets: ["latin"] });
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+});
 
 export const metadata: Metadata = {
   title: "CryptoRank - Live Crypto Ranking System",
@@ -19,7 +27,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" className="dark">
-        <body className={`${inter.className} antialiased bg-background text-foreground`}>
+        <body className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}>
           <QueryProvider>
             {children}
           </QueryProvider>

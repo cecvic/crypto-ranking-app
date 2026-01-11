@@ -1,21 +1,33 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   LineChartIcon,
   TrendingUpIcon,
   BrainCircuitIcon,
   WalletIcon,
   ArrowRightIcon,
-  ShieldCheckIcon,
   ZapIcon,
+  BarChart3Icon,
+  ShieldCheckIcon,
+  SparklesIcon,
 } from 'lucide-react';
+import { AnimatedBackground } from '@/components/landing/animated-background';
+import { GlassCard, FeatureCard, StatCard } from '@/components/landing/glass-card';
+import {
+  AnimatedHeadline,
+  GradientText,
+  FadeUpText,
+  AnimatedCounter,
+  StaggerContainer,
+  StaggerItem,
+} from '@/components/landing/animated-text';
+import { GlowButton, AnimatedButtonGroup, PulseIndicator } from '@/components/landing/glow-button';
 
 async function getFearGreed() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/fear-greed`, {
-      next: { revalidate: 300 },
-    });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/fear-greed`,
+      { next: { revalidate: 300 } }
+    );
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -27,163 +39,262 @@ export default async function LandingPage() {
   const fearGreed = await getFearGreed();
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <AnimatedBackground>
       {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <LineChartIcon className="h-6 w-6 text-primary" />
+      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
+        <div className="container flex h-16 items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+              <LineChartIcon className="h-5 w-5 text-primary" />
+            </div>
             <span className="font-bold text-lg">CryptoRank</span>
           </Link>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" asChild>
-              <Link href="/sign-in">Sign In</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/sign-up">Get Started</Link>
-            </Button>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/sign-in"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors px-4 py-2"
+            >
+              Sign In
+            </Link>
+            <GlowButton href="/sign-up" size="default">
+              Get Started
+            </GlowButton>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="flex-1 flex items-center justify-center py-20 px-4">
-        <div className="container max-w-4xl text-center space-y-8">
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
+      <section className="min-h-screen flex items-center justify-center pt-16 px-4">
+        <div className="container max-w-5xl text-center space-y-8">
+          <AnimatedHeadline>
             Crypto Rankings
-            <span className="text-primary"> Powered by AI</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <br />
+            <GradientText>Powered by AI</GradientText>
+          </AnimatedHeadline>
+
+          <FadeUpText
+            as="p"
+            delay={0.2}
+            className="text-fluid-lg text-muted-foreground max-w-2xl mx-auto"
+          >
             Make smarter trading decisions with our 5-factor analysis combining sentiment,
             technical indicators, whale tracking, and AI predictions.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button size="lg" asChild>
-              <Link href="/sign-up">
-                Get Started Free
-                <ArrowRightIcon className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="/sign-in">Sign In</Link>
-            </Button>
+          </FadeUpText>
+
+          <AnimatedButtonGroup>
+            <GlowButton href="/sign-up" size="lg" icon={<ArrowRightIcon className="h-4 w-4" />}>
+              Start Free
+            </GlowButton>
+            <GlowButton href="/sign-in" variant="secondary" size="lg">
+              Sign In
+            </GlowButton>
+          </AnimatedButtonGroup>
+
+          {/* Fear & Greed Indicator */}
+          {fearGreed && (
+            <div className="pt-8">
+              <PulseIndicator value={fearGreed.value} label={fearGreed.value_classification} />
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-24 px-4">
+        <div className="container max-w-6xl">
+          <FadeUpText as="div" className="text-center mb-16">
+            <h2 className="text-fluid-3xl font-bold mb-4">
+              <GradientText animated={false}>5-Factor</GradientText> Analysis
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-fluid-base">
+              Our proprietary ranking system combines multiple data sources to give you a
+              comprehensive view of each cryptocurrency.
+            </p>
+          </FadeUpText>
+
+          <StaggerContainer className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <StaggerItem>
+              <FeatureCard
+                icon={<TrendingUpIcon className="h-6 w-6" />}
+                title="Sentiment Analysis"
+                description="Track social media buzz, news sentiment, and market fear/greed to gauge market psychology."
+              />
+            </StaggerItem>
+            <StaggerItem>
+              <FeatureCard
+                icon={<BarChart3Icon className="h-6 w-6" />}
+                title="Technical Indicators"
+                description="RSI, MACD, Bollinger Bands, and SuperTrend analysis for technical trading signals."
+              />
+            </StaggerItem>
+            <StaggerItem>
+              <FeatureCard
+                icon={<WalletIcon className="h-6 w-6" />}
+                title="Whale Tracking"
+                description="Monitor large transactions, exchange flows, and TVL changes from big players."
+              />
+            </StaggerItem>
+            <StaggerItem>
+              <FeatureCard
+                icon={<BrainCircuitIcon className="h-6 w-6" />}
+                title="AI Predictions"
+                description="Machine learning price forecasts and neural network analysis for future trends."
+              />
+            </StaggerItem>
+            <StaggerItem>
+              <FeatureCard
+                icon={<ZapIcon className="h-6 w-6" />}
+                title="Real-Time Updates"
+                description="Live data refreshed every minute from multiple premium data sources."
+              />
+            </StaggerItem>
+            <StaggerItem>
+              <FeatureCard
+                icon={<ShieldCheckIcon className="h-6 w-6" />}
+                title="Top 100 Coverage"
+                description="Comprehensive analysis of the top cryptocurrencies by market cap."
+              />
+            </StaggerItem>
+          </StaggerContainer>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-24 px-4">
+        <div className="container max-w-5xl">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            <GlassCard hover={false} delay={0} className="text-center py-8">
+              <div className="text-fluid-4xl font-bold gradient-text">
+                <AnimatedCounter value={100} suffix="+" />
+              </div>
+              <div className="text-muted-foreground mt-2 text-sm">Coins Tracked</div>
+            </GlassCard>
+            <GlassCard hover={false} delay={0.1} className="text-center py-8">
+              <div className="text-fluid-4xl font-bold gradient-text">
+                <AnimatedCounter value={5} />
+              </div>
+              <div className="text-muted-foreground mt-2 text-sm">Data Sources</div>
+            </GlassCard>
+            <GlassCard hover={false} delay={0.2} className="text-center py-8">
+              <div className="text-fluid-4xl font-bold gradient-text">
+                <AnimatedCounter value={60} suffix="s" />
+              </div>
+              <div className="text-muted-foreground mt-2 text-sm">Refresh Rate</div>
+            </GlassCard>
+            <GlassCard hover={false} delay={0.3} className="text-center py-8">
+              <div className="text-fluid-4xl font-bold gradient-text">
+                <AnimatedCounter value={24} suffix="/7" />
+              </div>
+              <div className="text-muted-foreground mt-2 text-sm">Monitoring</div>
+            </GlassCard>
           </div>
         </div>
       </section>
 
-      {/* Fear & Greed Preview */}
-      {fearGreed && (
-        <section className="py-12 bg-muted/30">
-          <div className="container max-w-4xl">
-            <Card className="border-2">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl">Market Sentiment Right Now</CardTitle>
-                <CardDescription>Fear & Greed Index from Alternative.me</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center gap-4">
-                <div className="text-6xl font-bold text-primary">{fearGreed.value}</div>
-                <div className="text-xl font-medium capitalize">{fearGreed.value_classification}</div>
-                <p className="text-sm text-muted-foreground">
-                  Sign up to see how this affects individual coin rankings
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-      )}
+      {/* How It Works Section */}
+      <section className="py-24 px-4">
+        <div className="container max-w-4xl">
+          <FadeUpText as="div" className="text-center mb-16">
+            <h2 className="text-fluid-3xl font-bold mb-4">
+              How It <GradientText animated={false}>Works</GradientText>
+            </h2>
+          </FadeUpText>
 
-      {/* Features Section */}
-      <section className="py-20 px-4">
-        <div className="container max-w-6xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">5-Factor Analysis</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Our proprietary ranking system combines multiple data sources to give you
-              a comprehensive view of each cryptocurrency.
-            </p>
-          </div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <TrendingUpIcon className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>Sentiment Analysis</CardTitle>
-                <CardDescription>
-                  Track social media buzz, news sentiment, and market fear/greed
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader>
-                <LineChartIcon className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>Technical Indicators</CardTitle>
-                <CardDescription>
-                  RSI, MACD, Bollinger Bands, and SuperTrend analysis
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader>
-                <WalletIcon className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>Whale Tracking</CardTitle>
-                <CardDescription>
-                  Monitor large transactions, exchange flows, and TVL changes
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader>
-                <BrainCircuitIcon className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>AI Predictions</CardTitle>
-                <CardDescription>
-                  Machine learning price forecasts and neural network analysis
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader>
-                <ZapIcon className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>Real-Time Updates</CardTitle>
-                <CardDescription>
-                  Live data refreshed every minute from multiple sources
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader>
-                <ShieldCheckIcon className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>Top 100 Coverage</CardTitle>
-                <CardDescription>
-                  Comprehensive analysis of the top cryptocurrencies by market cap
-                </CardDescription>
-              </CardHeader>
-            </Card>
+          <div className="relative">
+            {/* Connecting line */}
+            <div className="absolute left-8 top-8 bottom-8 w-px bg-gradient-to-b from-primary via-accent to-cyan-500 hidden md:block" />
+
+            <div className="space-y-8 md:space-y-12">
+              <FadeUpText delay={0} className="flex gap-6 items-start">
+                <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0 relative z-10">
+                  <span className="text-2xl font-bold text-primary">1</span>
+                </div>
+                <GlassCard hover={false} className="flex-1">
+                  <h3 className="text-lg font-semibold mb-2">Sign Up Free</h3>
+                  <p className="text-muted-foreground">
+                    Create your account in seconds with Google OAuth. No credit card required.
+                  </p>
+                </GlassCard>
+              </FadeUpText>
+
+              <FadeUpText delay={0.1} className="flex gap-6 items-start">
+                <div className="w-16 h-16 rounded-2xl bg-accent/20 flex items-center justify-center shrink-0 relative z-10">
+                  <span className="text-2xl font-bold text-accent">2</span>
+                </div>
+                <GlassCard hover={false} className="flex-1">
+                  <h3 className="text-lg font-semibold mb-2">Explore Rankings</h3>
+                  <p className="text-muted-foreground">
+                    Browse our AI-powered rankings of 100+ cryptocurrencies with real-time data.
+                  </p>
+                </GlassCard>
+              </FadeUpText>
+
+              <FadeUpText delay={0.2} className="flex gap-6 items-start">
+                <div className="w-16 h-16 rounded-2xl bg-cyan-500/20 flex items-center justify-center shrink-0 relative z-10">
+                  <span className="text-2xl font-bold text-cyan-400">3</span>
+                </div>
+                <GlassCard hover={false} className="flex-1">
+                  <h3 className="text-lg font-semibold mb-2">Make Smarter Trades</h3>
+                  <p className="text-muted-foreground">
+                    Use our 5-factor analysis to inform your trading decisions and stay ahead of the market.
+                  </p>
+                </GlassCard>
+              </FadeUpText>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 bg-primary text-primary-foreground">
-        <div className="container max-w-4xl text-center space-y-6">
-          <h2 className="text-3xl font-bold">Ready to Make Smarter Trades?</h2>
-          <p className="text-lg opacity-90">
-            Join CryptoRank today and get access to AI-powered rankings for the top 100 cryptocurrencies.
-          </p>
-          <Button size="lg" variant="secondary" asChild>
-            <Link href="/sign-up">
-              Create Free Account
-              <ArrowRightIcon className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+      <section className="py-24 px-4">
+        <div className="container max-w-4xl">
+          <GlassCard hover={false} className="text-center py-16 px-8">
+            <FadeUpText as="div">
+              <SparklesIcon className="h-12 w-12 text-primary mx-auto mb-6" />
+              <h2 className="text-fluid-3xl font-bold mb-4">
+                Ready to Make <GradientText>Smarter Trades</GradientText>?
+              </h2>
+              <p className="text-muted-foreground text-fluid-base max-w-xl mx-auto mb-8">
+                Join CryptoRank today and get access to AI-powered rankings for the top 100
+                cryptocurrencies.
+              </p>
+              <GlowButton
+                href="/sign-up"
+                size="xl"
+                icon={<ArrowRightIcon className="h-5 w-5" />}
+              >
+                Create Free Account
+              </GlowButton>
+            </FadeUpText>
+          </GlassCard>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-8">
-        <div className="container text-center text-sm text-muted-foreground">
-          <p>CryptoRank - Data from CoinGecko, LunarCrush, TAAPI, DefiLlama & more</p>
-          <p className="mt-1">Not financial advice. Do your own research.</p>
+      <footer className="py-12 px-4 border-t border-white/5">
+        <div className="container max-w-6xl">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                <LineChartIcon className="h-4 w-4 text-primary" />
+              </div>
+              <span className="font-semibold">CryptoRank</span>
+            </div>
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Data from CoinGecko, LunarCrush, TAAPI, DefiLlama & more</p>
+              <p className="mt-1 text-xs">Not financial advice. Do your own research.</p>
+            </div>
+            <div className="flex gap-4 text-sm text-muted-foreground">
+              <Link href="/sign-in" className="hover:text-foreground transition-colors">
+                Sign In
+              </Link>
+              <Link href="/sign-up" className="hover:text-foreground transition-colors">
+                Sign Up
+              </Link>
+            </div>
+          </div>
         </div>
       </footer>
-    </div>
+    </AnimatedBackground>
   );
 }
