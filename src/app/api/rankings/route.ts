@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getTopCoins } from '@/lib/apis/coingecko';
-import { getLunarCrushBatch, getFearGreedIndex } from '@/lib/apis/sentiment';
+import { getLunarCrushBatch, getFearGreedIndex, getLocalSentimentBatch } from '@/lib/apis/sentiment';
 import { getTechnicalAnalysis } from '@/lib/apis/technical';
 import { getWhaleActivity } from '@/lib/apis/whale';
 import { getAIPrediction } from '@/lib/apis/prediction';
 import { calculateRankingScore, rankCoins } from '@/lib/ranking/calculator';
 import { CoinRanking, CoinPrice, SentimentData } from '@/lib/types';
+
+const USE_LOCAL_SENTIMENT = process.env.USE_LOCAL_SENTIMENT === 'true';
 
 let cachedRankings: CoinRanking[] = [];
 let cachedSentiment: Map<string, SentimentData> = new Map();
@@ -29,10 +31,29 @@ export async function GET() {
     const coins = await getTopCoins(100);
     const fearGreed = await getFearGreedIndex();
 
-    // Batch fetch sentiment data (single API call for all coins)
     if (now - lastSentimentFetch > SENTIMENT_CACHE_DURATION) {
-      const symbols = coins.map((c: CoinPrice) => c.symbol.toUpperCase());
-      const sentimentBatch = await getLunarCrushBatch(symbols).catch(() => new Map());
+      let sentimentBatch: Map<string, SentimentData> = new Map();
+      
+      if (USE_LOCAL_SENTIMENT) {
+        console.log('[Rankings] Using LOCAL sentiment analysis...');
+        const coinData = coins.map((c: CoinPrice) => ({
+          id: c.id,
+          symbol: c.symbol,
+          priceChange24h: c.price_change_percentage_24h || 0,
+          priceChange7d: c.price_change_percentage_7d || 0,
+          volume24h: c.total_volume || 0,
+          avgVolume: c.total_volume || 0,
+        }));
+        sentimentBatch = await getLocalSentimentBatch(coinData).catch((err) => {
+          console.error('[Rankings] Local sentiment error:', err);
+          return new Map();
+        });
+        console.log(`[Rankings] Local sentiment fetched for ${sentimentBatch.size} coins`);
+      } else {
+        const symbols = coins.map((c: CoinPrice) => c.symbol.toUpperCase());
+        sentimentBatch = await getLunarCrushBatch(symbols).catch(() => new Map());
+      }
+      
       if (sentimentBatch.size > 0) {
         cachedSentiment = sentimentBatch;
         lastSentimentFetch = now;
