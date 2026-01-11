@@ -168,3 +168,6 @@ export interface APIConfig {
     baseUrl: string;
   };
 }
+
+// Re-export confluence types
+export * from './confluence';

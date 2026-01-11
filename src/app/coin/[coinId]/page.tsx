@@ -3,6 +3,7 @@
 import { use } from 'react';
 import { useCoin, useCoinChart } from '@/hooks/use-rankings';
 import { TradingChart } from '@/components/charts/trading-chart';
+import { ConfluenceRadar } from '@/components/charts/confluence-radar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -151,13 +152,26 @@ export default function CoinPage({ params }: CoinPageProps) {
         </CardContent>
       </Card>
 
-      {/* Score Breakdown */}
-      <div className="grid gap-4 md:grid-cols-5">
-        <ScoreCard title="Sentiment" score={scores.sentiment} />
-        <ScoreCard title="Technical" score={scores.technical} />
-        <ScoreCard title="Whale Activity" score={scores.whale} />
-        <ScoreCard title="AI Prediction" score={scores.ai} />
-        <ScoreCard title="Price Action" score={scores.pricePerformance} />
+      {/* Confluence Radar + Score Breakdown */}
+      <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
+        {/* Confluence Radar Card */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Confluence Radar</CardTitle>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <ConfluenceRadar scores={scores} size="lg" />
+          </CardContent>
+        </Card>
+
+        {/* Score Breakdown Grid */}
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-5 content-start">
+          <ScoreCard title="Sentiment" score={scores.sentiment} />
+          <ScoreCard title="Technical" score={scores.technical} />
+          <ScoreCard title="Whale Activity" score={scores.whale} />
+          <ScoreCard title="AI Prediction" score={scores.ai} />
+          <ScoreCard title="Price Action" score={scores.pricePerformance} />
+        </div>
       </div>
 
       {/* Market Data */}
