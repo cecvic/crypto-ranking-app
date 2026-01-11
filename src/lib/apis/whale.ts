@@ -1,6 +1,11 @@
-// Whale Activity APIs - DefiLlama, Whale Alert
+// Whale Activity APIs - DefiLlama, Whale Alert, Alchemy
 import axios from 'axios';
 import { WhaleActivity } from '../types';
+import {
+  getWhaleMetrics24h,
+  getBatchWhaleMetrics,
+  type WhaleMetrics,
+} from '@/lib/db/whale-queries';
 
 // ============================================
 // DEFILLAMA API - TVL & Protocol Data (FREE)
@@ -230,4 +235,130 @@ export async function getWhaleActivity(
     whaleScore,
     source: whaleAlertData ? 'whale-alert' : 'defillama',
   };
+}
+
+// ============================================
+// ALCHEMY WEBHOOK-BASED WHALE TRACKING
+// ============================================
+
+/**
+ * Calculate whale score from metrics
+ */
+function calculateWhaleScoreFromMetrics(metrics: WhaleMetrics): number {
+  let whaleScore = 50; // Start neutral
+
+  // Factor 1: Net flow direction (max +/-25 points)
+  // Positive net flow (more leaving exchanges) = accumulation = bullish
+  if (metrics.netFlow !== 0) {
+    const flowImpact = Math.min(25, Math.abs(metrics.netFlow) / 10_000_000);
+    whaleScore += metrics.netFlow > 0 ? flowImpact : -flowImpact;
+  }
+
+  // Factor 2: Transaction volume (max +/-15 points)
+  // High whale activity = significant interest
+  if (metrics.totalTransactions > 50) {
+    whaleScore += 15;
+  } else if (metrics.totalTransactions > 20) {
+    whaleScore += 10;
+  } else if (metrics.totalTransactions > 5) {
+    whaleScore += 5;
+  } else if (metrics.totalTransactions === 0) {
+    // No activity - keep neutral or slightly bearish
+    whaleScore -= 5;
+  }
+
+  // Factor 3: Accumulation ratio (max +/-10 points)
+  const totalFlow = metrics.exchangeInflow + metrics.exchangeOutflow;
+  if (totalFlow > 0) {
+    const accumulationRatio = metrics.exchangeOutflow / totalFlow;
+    if (accumulationRatio > 0.7) {
+      whaleScore += 10; // Strong accumulation
+    } else if (accumulationRatio > 0.55) {
+      whaleScore += 5;
+    } else if (accumulationRatio < 0.3) {
+      whaleScore -= 10; // Strong distribution
+    } else if (accumulationRatio < 0.45) {
+      whaleScore -= 5;
+    }
+  }
+
+  // Clamp to 0-100
+  return Math.max(0, Math.min(100, whaleScore));
+}
+
+/**
+ * Get whale activity from Alchemy webhook database
+ */
+export async function getWhaleActivityFromDB(
+  coinId: string,
+  symbol: string
+): Promise<WhaleActivity> {
+  const metrics = await getWhaleMetrics24h(coinId);
+
+  // If no data from DB, fall back to existing logic
+  if (metrics.totalTransactions === 0) {
+    return getWhaleActivity(coinId, symbol);
+  }
+
+  const whaleScore = calculateWhaleScoreFromMetrics(metrics);
+
+  return {
+    coinId,
+    largeTransactions24h: metrics.totalTransactions,
+    exchangeInflow24h: metrics.exchangeInflow,
+    exchangeOutflow24h: metrics.exchangeOutflow,
+    netFlow24h: metrics.netFlow,
+    whaleScore,
+    source: 'alchemy',
+  };
+}
+
+/**
+ * Batch version for efficient ranking computation
+ */
+export async function getBatchWhaleActivity(
+  coins: Array<{ id: string; symbol: string }>
+): Promise<Map<string, WhaleActivity>> {
+  const coinIds = coins.map((c) => c.id);
+  const metricsMap = await getBatchWhaleMetrics(coinIds);
+
+  const results = new Map<string, WhaleActivity>();
+
+  for (const coin of coins) {
+    const metrics = metricsMap.get(coin.id);
+
+    if (!metrics || metrics.totalTransactions === 0) {
+      // No Alchemy data - return neutral score with fallback
+      try {
+        const fallback = await getWhaleActivity(coin.id, coin.symbol);
+        results.set(coin.id, fallback);
+      } catch {
+        // If fallback also fails, use neutral score
+        results.set(coin.id, {
+          coinId: coin.id,
+          largeTransactions24h: 0,
+          exchangeInflow24h: 0,
+          exchangeOutflow24h: 0,
+          netFlow24h: 0,
+          whaleScore: 50,
+          source: 'defillama',
+        });
+      }
+      continue;
+    }
+
+    const whaleScore = calculateWhaleScoreFromMetrics(metrics);
+
+    results.set(coin.id, {
+      coinId: coin.id,
+      largeTransactions24h: metrics.totalTransactions,
+      exchangeInflow24h: metrics.exchangeInflow,
+      exchangeOutflow24h: metrics.exchangeOutflow,
+      netFlow24h: metrics.netFlow,
+      whaleScore,
+      source: 'alchemy',
+    });
+  }
+
+  return results;
 }

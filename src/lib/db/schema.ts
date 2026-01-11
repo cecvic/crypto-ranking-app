@@ -78,6 +78,80 @@ export const coinRankingsRelations = relations(coinRankings, ({ one }) => ({
   }),
 }));
 
+// ============================================
+// WHALE TRACKING TABLES
+// ============================================
+
+// Whale transaction events from Alchemy webhooks
+export const whaleEvents = pgTable('whale_events', {
+  id: serial('id').primaryKey(),
+
+  // Transaction identification
+  transactionHash: text('transaction_hash').notNull(),
+  blockNumber: integer('block_number').notNull(),
+  blockTimestamp: timestamp('block_timestamp', { withTimezone: true }).notNull(),
+
+  // Token details
+  tokenAddress: text('token_address').notNull(), // Contract address
+  tokenSymbol: text('token_symbol'),              // ETH, USDC, etc.
+  coinGeckoId: text('coingecko_id'),             // Mapped coin ID
+
+  // Transfer details
+  fromAddress: text('from_address').notNull(),
+  toAddress: text('to_address').notNull(),
+  valueRaw: text('value_raw').notNull(),         // Raw value (wei/smallest unit)
+  valueToken: decimal('value_token', { precision: 30, scale: 10 }), // Human-readable
+  valueUsd: decimal('value_usd', { precision: 20, scale: 2 }),      // USD value at time
+
+  // Classification
+  transferType: text('transfer_type').notNull(), // 'wallet_to_wallet', 'exchange_inflow', 'exchange_outflow', 'exchange_to_exchange'
+  fromLabel: text('from_label'),                 // 'exchange:binance', 'whale:0x...', etc.
+  toLabel: text('to_label'),
+
+  // Metadata
+  chain: text('chain').notNull().default('ethereum'),
+  webhookId: text('webhook_id'),
+  rawPayload: jsonb('raw_payload'),
+
+  // Timestamps
+  receivedAt: timestamp('received_at', { withTimezone: true }).defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+}, (table) => [
+  // Prevent duplicate transactions
+  uniqueIndex('idx_whale_events_tx_unique').on(table.transactionHash, table.tokenAddress),
+  // Query by coin for ranking computation
+  index('idx_whale_events_coin_time').on(table.coinGeckoId, table.blockTimestamp),
+  // Query by time for cleanup
+  index('idx_whale_events_timestamp').on(table.blockTimestamp),
+  // Query by transfer type for metrics
+  index('idx_whale_events_type').on(table.transferType, table.blockTimestamp),
+]);
+
+// Token to CoinGecko ID mapping (for lookup)
+export const tokenMappings = pgTable('token_mappings', {
+  id: serial('id').primaryKey(),
+  contractAddress: text('contract_address').notNull().unique(),
+  chain: text('chain').notNull().default('ethereum'),
+  symbol: text('symbol').notNull(),
+  coinGeckoId: text('coingecko_id').notNull(),
+  decimals: integer('decimals').notNull().default(18),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+}, (table) => [
+  index('idx_token_mappings_address').on(table.contractAddress),
+]);
+
+// Known exchange/whale addresses for classification
+export const knownAddresses = pgTable('known_addresses', {
+  id: serial('id').primaryKey(),
+  address: text('address').notNull().unique(),
+  label: text('label').notNull(),         // 'exchange:binance', 'exchange:coinbase', 'whale', 'contract'
+  name: text('name'),                      // Human-readable name
+  chain: text('chain').notNull().default('ethereum'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+}, (table) => [
+  index('idx_known_addresses_address').on(table.address),
+]);
+
 // TypeScript types inferred from schema
 export type RankingSnapshot = typeof rankingSnapshots.$inferSelect;
 export type NewRankingSnapshot = typeof rankingSnapshots.$inferInsert;
@@ -85,3 +159,11 @@ export type CoinRankingRow = typeof coinRankings.$inferSelect;
 export type NewCoinRankingRow = typeof coinRankings.$inferInsert;
 export type ApiCacheRow = typeof apiCache.$inferSelect;
 export type NewApiCacheRow = typeof apiCache.$inferInsert;
+
+// Whale tracking types
+export type WhaleEvent = typeof whaleEvents.$inferSelect;
+export type NewWhaleEvent = typeof whaleEvents.$inferInsert;
+export type TokenMapping = typeof tokenMappings.$inferSelect;
+export type NewTokenMapping = typeof tokenMappings.$inferInsert;
+export type KnownAddress = typeof knownAddresses.$inferSelect;
+export type NewKnownAddress = typeof knownAddresses.$inferInsert;

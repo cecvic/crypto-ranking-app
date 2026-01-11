@@ -65,7 +65,7 @@ export interface WhaleActivity {
   netFlow24h: number;         // Positive = accumulation, Negative = distribution
   whaleScore: number;         // 0-100 normalized
   topHoldersChange?: number;  // Percentage change in top holder concentration
-  source: 'defillama' | 'whale-alert' | 'santiment';
+  source: 'defillama' | 'whale-alert' | 'santiment' | 'alchemy';
 }
 
 export interface AIPrediction {

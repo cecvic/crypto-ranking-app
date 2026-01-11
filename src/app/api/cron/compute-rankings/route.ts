@@ -9,7 +9,7 @@ import { createSnapshot, refreshRankChangesView, getLatestSnapshot } from '@/lib
 import { calculateRankingScore, rankCoins } from '@/lib/ranking/calculator';
 import { generateLocalPrediction } from '@/lib/apis/local-prediction';
 import { getTechnicalAnalysis } from '@/lib/apis/technical';
-import { getWhaleActivity } from '@/lib/apis/whale';
+import { getWhaleActivity, getBatchWhaleActivity } from '@/lib/apis/whale';
 import {
   CoinPrice,
   CoinRanking,
@@ -69,7 +69,24 @@ async function handler(req: NextRequest): Promise<NextResponse> {
         : cachedFearGreed;
     }
 
-    // 4. Compute rankings for each coin
+    // 4. Pre-fetch whale activity (batch if Alchemy enabled, otherwise per-coin)
+    const whaleMap = new Map<string, WhaleActivity>();
+    if (process.env.USE_ALCHEMY_WHALE === 'true') {
+      console.log('[compute-rankings] Using Alchemy batch whale activity');
+      try {
+        const batchWhale = await getBatchWhaleActivity(
+          coins.map((c) => ({ id: c.id, symbol: c.symbol }))
+        );
+        for (const [coinId, whale] of batchWhale) {
+          whaleMap.set(coinId, whale);
+        }
+      } catch (error) {
+        console.error('[compute-rankings] Batch whale activity error:', error);
+        // Fall through to per-coin queries below
+      }
+    }
+
+    // 5. Compute rankings for each coin
     const rawRankings: Omit<CoinRanking, 'rank' | 'rankChange'>[] = [];
 
     for (const coin of coins) {
@@ -101,12 +118,14 @@ async function handler(req: NextRequest): Promise<NextResponse> {
         console.debug(`[compute-rankings] AI prediction skipped for ${coin.symbol}`);
       }
 
-      // Get whale activity (uses DefiLlama free API)
-      let whale: WhaleActivity | null = null;
-      try {
-        whale = await getWhaleActivity(coin.id, coin.symbol);
-      } catch (error) {
-        console.debug(`[compute-rankings] Whale activity skipped for ${coin.symbol}`);
+      // Get whale activity (from batch map or fallback to per-coin query)
+      let whale: WhaleActivity | null = whaleMap.get(coin.id) || null;
+      if (!whale) {
+        try {
+          whale = await getWhaleActivity(coin.id, coin.symbol);
+        } catch (error) {
+          console.debug(`[compute-rankings] Whale activity skipped for ${coin.symbol}`);
+        }
       }
 
       // Calculate ranking score
@@ -126,12 +145,12 @@ async function handler(req: NextRequest): Promise<NextResponse> {
       });
     }
 
-    // 5. Rank coins by overall score
+    // 6. Rank coins by overall score
     const rankings = rankCoins(rawRankings);
 
     console.log(`[compute-rankings] Computed ${rankings.length} rankings`);
 
-    // 6. Persist to database if persistent storage is enabled
+    // 7. Persist to database if persistent storage is enabled
     let snapshotId: number | null = null;
     if (process.env.USE_PERSISTENT_STORAGE === 'true') {
       try {
@@ -152,7 +171,7 @@ async function handler(req: NextRequest): Promise<NextResponse> {
       }
     }
 
-    // 7. Cache rankings in Redis for fast access
+    // 8. Cache rankings in Redis for fast access
     await redis.setex(
       CACHE_KEYS.RANKINGS_LATEST,
       CACHE_TTL.RANKINGS_LATEST,
