@@ -14,18 +14,6 @@
   ],
   "crons": [
     {
-      "path": "/api/cron/collect-prices",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/collect-sentiment",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/compute-rankings",
-      "schedule": "*/5 * * * *"
-    },
-    {
       "path": "/api/cron/cleanup",
       "schedule": "0 3 * * *"
     }
