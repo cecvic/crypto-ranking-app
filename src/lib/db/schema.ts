@@ -8,6 +8,7 @@ import {
   timestamp,
   bigint,
   jsonb,
+  boolean,
   uniqueIndex,
   index,
 } from 'drizzle-orm/pg-core';
@@ -152,6 +153,63 @@ export const knownAddresses = pgTable('known_addresses', {
   index('idx_known_addresses_address').on(table.address),
 ]);
 
+// ============================================
+// ALERT SUBSCRIPTION TABLES
+// ============================================
+
+// User alert subscriptions for confluence alerts
+export const alertSubscriptions = pgTable('alert_subscriptions', {
+  id: serial('id').primaryKey(),
+  clerkUserId: text('clerk_user_id').notNull(),
+  email: text('email').notNull(),
+
+  // Alert preferences
+  enableBullish: boolean('enable_bullish').notNull().default(true),
+  enableBearish: boolean('enable_bearish').notNull().default(true),
+  minConfluence: integer('min_confluence').notNull().default(4), // 4 or 5
+
+  // Rate limiting
+  maxAlertsPerDay: integer('max_alerts_per_day').notNull().default(20),
+  alertsSentToday: integer('alerts_sent_today').notNull().default(0),
+  lastAlertResetAt: timestamp('last_alert_reset_at', { withTimezone: true }).defaultNow(),
+
+  // Status
+  isActive: boolean('is_active').notNull().default(true),
+
+  // Timestamps
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+}, (table) => [
+  uniqueIndex('idx_alert_subs_user').on(table.clerkUserId),
+  index('idx_alert_subs_active').on(table.isActive),
+]);
+
+// Alert history for deduplication and tracking
+export const alertHistory = pgTable('alert_history', {
+  id: serial('id').primaryKey(),
+  subscriptionId: integer('subscription_id').references(() => alertSubscriptions.id, { onDelete: 'cascade' }).notNull(),
+  coinId: text('coin_id').notNull(),
+  direction: text('direction').notNull(), // 'bullish' | 'bearish'
+  confluenceLevel: integer('confluence_level').notNull(), // 3, 4, or 5
+  overallScore: decimal('overall_score', { precision: 5, scale: 2 }),
+  sentAt: timestamp('sent_at', { withTimezone: true }).defaultNow(),
+}, (table) => [
+  index('idx_alert_history_sub_coin').on(table.subscriptionId, table.coinId, table.sentAt),
+  index('idx_alert_history_sent').on(table.sentAt),
+]);
+
+// Relations for alert tables
+export const alertSubscriptionsRelations = relations(alertSubscriptions, ({ many }) => ({
+  alertHistory: many(alertHistory),
+}));
+
+export const alertHistoryRelations = relations(alertHistory, ({ one }) => ({
+  subscription: one(alertSubscriptions, {
+    fields: [alertHistory.subscriptionId],
+    references: [alertSubscriptions.id],
+  }),
+}));
+
 // TypeScript types inferred from schema
 export type RankingSnapshot = typeof rankingSnapshots.$inferSelect;
 export type NewRankingSnapshot = typeof rankingSnapshots.$inferInsert;
@@ -167,3 +225,9 @@ export type TokenMapping = typeof tokenMappings.$inferSelect;
 export type NewTokenMapping = typeof tokenMappings.$inferInsert;
 export type KnownAddress = typeof knownAddresses.$inferSelect;
 export type NewKnownAddress = typeof knownAddresses.$inferInsert;
+
+// Alert subscription types
+export type AlertSubscription = typeof alertSubscriptions.$inferSelect;
+export type NewAlertSubscription = typeof alertSubscriptions.$inferInsert;
+export type AlertHistoryRow = typeof alertHistory.$inferSelect;
+export type NewAlertHistoryRow = typeof alertHistory.$inferInsert;

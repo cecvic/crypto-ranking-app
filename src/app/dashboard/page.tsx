@@ -3,6 +3,8 @@
 import { useRankings, useFearGreed } from '@/hooks/use-rankings';
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { TopMovers } from '@/components/dashboard/top-movers';
+import { ConfluenceOpportunities } from '@/components/dashboard/confluence-opportunities';
+import { AlertSubscriptionCard } from '@/components/alerts/alert-subscription-card';
 import { RankingsTable } from '@/components/rankings/rankings-table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +46,16 @@ export default function DashboardPage() {
 
       {/* Top Movers */}
       <TopMovers rankings={rankings} isLoading={isLoading} />
+
+      {/* Confluence Radar & Alerts */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ConfluenceOpportunities rankings={rankings} isLoading={isLoading} />
+        </div>
+        <div className="lg:col-span-1">
+          <AlertSubscriptionCard />
+        </div>
+      </div>
 
       {/* Rankings Table */}
       <Card>
