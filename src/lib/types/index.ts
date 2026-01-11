@@ -169,5 +169,174 @@ export interface APIConfig {
   };
 }
 
+// ============================================
+// Multi-Source Aggregation Types
+// ============================================
+
+/**
+ * Data source identifier for aggregated coins
+ */
+export type CoinSource = 'dexpaprika' | 'dexscreener' | 'coingecko' | 'binance' | 'kucoin';
+
+/**
+ * Coin category flags
+ */
+export type CoinCategory = 'meme' | 'ai' | 'defi' | 'gaming' | 'layer1' | 'layer2';
+
+/**
+ * Aggregated coin from multiple data sources
+ */
+export interface AggregatedCoin {
+  id: string;
+  symbol: string;
+  name: string;
+  image?: string;
+  price: number;
+  volume_24h: number;
+  price_change_24h: number;
+  market_cap?: number;
+  chain?: string;
+  address?: string;
+  source: CoinSource;
+  sources?: CoinSource[]; // All sources this coin appeared in
+  categories?: CoinCategory[];
+  is_meme?: boolean;
+  is_ai?: boolean;
+  is_defi?: boolean;
+  is_gaming?: boolean;
+  last_updated: string;
+}
+
+/**
+ * DexPaprika token response
+ */
+export interface DexPaprikaToken {
+  id: string;
+  name: string;
+  symbol: string;
+  chain: string;
+  address: string;
+  price_usd: number;
+  volume_24h_usd: number;
+  price_change_24h: number;
+  market_cap_usd?: number;
+  liquidity_usd?: number;
+  logo_url?: string;
+}
+
+/**
+ * DexPaprika API response wrapper
+ */
+export interface DexPaprikaResponse<T> {
+  tokens?: T[];
+  pairs?: T[];
+  data?: T[];
+}
+
+/**
+ * DexScreener pair response
+ */
+export interface DexScreenerPair {
+  chainId: string;
+  dexId: string;
+  url: string;
+  pairAddress: string;
+  baseToken: {
+    address: string;
+    name: string;
+    symbol: string;
+  };
+  quoteToken: {
+    address: string;
+    name: string;
+    symbol: string;
+  };
+  priceNative: string;
+  priceUsd: string;
+  txns: {
+    m5: { buys: number; sells: number };
+    h1: { buys: number; sells: number };
+    h6: { buys: number; sells: number };
+    h24: { buys: number; sells: number };
+  };
+  volume: {
+    m5: number;
+    h1: number;
+    h6: number;
+    h24: number;
+  };
+  priceChange: {
+    m5: number;
+    h1: number;
+    h6: number;
+    h24: number;
+  };
+  liquidity?: {
+    usd: number;
+    base: number;
+    quote: number;
+  };
+  fdv?: number;
+  marketCap?: number;
+  pairCreatedAt?: number;
+  info?: {
+    imageUrl?: string;
+    header?: string;
+    openGraph?: string;
+  };
+  boosts?: {
+    active: number;
+  };
+}
+
+/**
+ * DexScreener API response wrapper
+ */
+export interface DexScreenerResponse {
+  schemaVersion: string;
+  pairs: DexScreenerPair[] | null;
+}
+
+/**
+ * DexScreener boosted token response
+ */
+export interface DexScreenerBoostedToken {
+  url: string;
+  chainId: string;
+  tokenAddress: string;
+  icon?: string;
+  header?: string;
+  description?: string;
+  links?: Array<{
+    label?: string;
+    type?: string;
+    url: string;
+  }>;
+}
+
+/**
+ * Aggregation result with metadata
+ */
+export interface AggregationResult {
+  coins: AggregatedCoin[];
+  metadata: {
+    totalFetched: number;
+    afterDedup: number;
+    afterStablecoinFilter: number;
+    breakdown: {
+      dexpaprika: number;
+      dexscreener: number;
+      coingecko: number;
+    };
+    categoryBreakdown: {
+      meme: number;
+      ai: number;
+      defi: number;
+    };
+    fetchDurationMs: number;
+    errors: string[];
+  };
+}
+
 // Re-export confluence types
 export * from './confluence';

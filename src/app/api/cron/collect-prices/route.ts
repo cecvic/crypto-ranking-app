@@ -1,16 +1,30 @@
-// Cron: Collect Prices from CoinGecko
-// Schedule: Every 1 minute
-// Purpose: Fetch top 100 coins and cache for rankings
+// Cron: Collect Prices from Multiple Sources
+// Schedule: Every 10 minutes (optimized for free tier limits)
+// Purpose: Aggregate coins from DexPaprika, DexScreener, and CoinGecko
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyCronRequestWithDevBypass } from '@/lib/qstash/verify';
-import { getTopCoins, getGlobalData } from '@/lib/apis/coingecko';
+import { getGlobalData } from '@/lib/apis/coingecko';
+import { aggregateAllCoins } from '@/lib/services/coin-aggregator';
+import { aggregatedToCoinPrice } from '@/lib/utils/coin-utils';
 import { getRedis, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/redis';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limiter/distributed';
 
+// Extended cache keys for category-based storage
+const CATEGORY_CACHE_KEYS = {
+  PRICES_MEME: 'prices:meme',
+  PRICES_AI: 'prices:ai',
+  PRICES_DEFI: 'prices:defi',
+  PRICES_ALL: 'prices:all',
+  AGGREGATION_METADATA: 'aggregation:metadata',
+} as const;
+
+// Longer TTL for aggregated data (10 minutes)
+const AGGREGATION_TTL = 600;
+
 async function handler(req: NextRequest): Promise<NextResponse> {
   const startTime = Date.now();
-  console.log('[collect-prices] Starting price collection...');
+  console.log('[collect-prices] Starting multi-source price collection...');
 
   try {
     // Check rate limit before making API calls
@@ -25,14 +39,16 @@ async function handler(req: NextRequest): Promise<NextResponse> {
       }, { status: 429 });
     }
 
-    // Fetch top 100 coins
-    const coins = await getTopCoins(100, 1, true);
-    console.log(`[collect-prices] Fetched ${coins.length} coins`);
+    // Aggregate from all sources
+    const aggregationResult = await aggregateAllCoins();
+    const { coins, metadata } = aggregationResult;
 
-    // Fetch global market data
+    console.log(`[collect-prices] Aggregated ${coins.length} coins in ${metadata.fetchDurationMs}ms`);
+    console.log(`[collect-prices] Breakdown: dexpaprika=${metadata.breakdown.dexpaprika}, dexscreener=${metadata.breakdown.dexscreener}, coingecko=${metadata.breakdown.coingecko}`);
+
+    // Fetch global market data (separate call)
     let globalData = null;
     try {
-      // Check rate limit again for second call
       const globalRateCheck = await checkRateLimit(RATE_LIMITS.COINGECKO);
       if (globalRateCheck.allowed) {
         globalData = await getGlobalData();
@@ -40,25 +56,56 @@ async function handler(req: NextRequest): Promise<NextResponse> {
       }
     } catch (error) {
       console.error('[collect-prices] Failed to fetch global data:', error);
-      // Non-fatal, continue with coins
+      // Non-fatal, continue
     }
 
     // Cache in Redis
     const redis = getRedis();
+    const pipeline = redis.pipeline();
 
-    // Cache full coin list
-    await redis.setex(
+    // Convert to CoinPrice format for backward compatibility
+    const coinPrices = coins.map(aggregatedToCoinPrice);
+
+    // Cache full list (backward compatible)
+    pipeline.setex(
       CACHE_KEYS.PRICES_LIST,
-      CACHE_TTL.PRICES,
+      AGGREGATION_TTL,
+      JSON.stringify(coinPrices)
+    );
+
+    // Cache aggregated coins with full metadata
+    pipeline.setex(
+      CATEGORY_CACHE_KEYS.PRICES_ALL,
+      AGGREGATION_TTL,
       JSON.stringify(coins)
     );
 
+    // Cache by category for fast filtering
+    const memeCoins = coins.filter(c => c.is_meme);
+    const aiCoins = coins.filter(c => c.is_ai);
+    const defiCoins = coins.filter(c => c.is_defi);
+
+    pipeline.setex(
+      CATEGORY_CACHE_KEYS.PRICES_MEME,
+      AGGREGATION_TTL,
+      JSON.stringify(memeCoins)
+    );
+    pipeline.setex(
+      CATEGORY_CACHE_KEYS.PRICES_AI,
+      AGGREGATION_TTL,
+      JSON.stringify(aiCoins)
+    );
+    pipeline.setex(
+      CATEGORY_CACHE_KEYS.PRICES_DEFI,
+      AGGREGATION_TTL,
+      JSON.stringify(defiCoins)
+    );
+
     // Cache individual coins for quick lookup
-    const pipeline = redis.pipeline();
-    for (const coin of coins) {
+    for (const coin of coinPrices.slice(0, 500)) { // Limit to top 500 for performance
       pipeline.setex(
         `${CACHE_KEYS.COIN_PREFIX}${coin.id}`,
-        CACHE_TTL.PRICES,
+        AGGREGATION_TTL,
         JSON.stringify(coin)
       );
     }
@@ -72,6 +119,16 @@ async function handler(req: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // Cache aggregation metadata
+    pipeline.setex(
+      CATEGORY_CACHE_KEYS.AGGREGATION_METADATA,
+      AGGREGATION_TTL,
+      JSON.stringify({
+        ...metadata,
+        timestamp: new Date().toISOString(),
+      })
+    );
+
     await pipeline.exec();
 
     const duration = Date.now() - startTime;
@@ -80,8 +137,17 @@ async function handler(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({
       success: true,
       coinsCollected: coins.length,
+      breakdown: {
+        total: coins.length,
+        meme: memeCoins.length,
+        ai: aiCoins.length,
+        defi: defiCoins.length,
+        sources: metadata.breakdown,
+      },
       hasGlobalData: !!globalData,
       durationMs: duration,
+      aggregationDurationMs: metadata.fetchDurationMs,
+      errors: metadata.errors.length > 0 ? metadata.errors : undefined,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

@@ -193,3 +193,114 @@ export const symbolToId: Record<string, string> = {
 export function getIdFromSymbol(symbol: string): string {
   return symbolToId[symbol.toUpperCase()] || symbol.toLowerCase();
 }
+
+// ============================================
+// Category-based coin fetching
+// ============================================
+
+export type CoinCategory = 'meme-token' | 'artificial-intelligence' | 'decentralized-finance-defi';
+
+/**
+ * Get coins by category
+ * Categories: meme-token, artificial-intelligence, decentralized-finance-defi
+ */
+export async function getCoinsByCategory(
+  category: CoinCategory,
+  limit: number = 250
+): Promise<CoinPrice[]> {
+  try {
+    console.log(`[CoinGecko] Fetching ${category} coins (limit: ${limit})...`);
+
+    const response = await api.get('/coins/markets', {
+      params: {
+        vs_currency: 'usd',
+        category: category,
+        order: 'volume_desc',
+        per_page: Math.min(limit, 250), // API max is 250
+        page: 1,
+        sparkline: false,
+        price_change_percentage: '24h,7d',
+        locale: 'en',
+      },
+    });
+
+    const coins = response.data.map((coin: CoinGeckoMarketCoin) => ({
+      id: coin.id,
+      symbol: coin.symbol.toUpperCase(),
+      name: coin.name,
+      image: coin.image,
+      current_price: coin.current_price || 0,
+      market_cap: coin.market_cap || 0,
+      market_cap_rank: coin.market_cap_rank || 0,
+      total_volume: coin.total_volume || 0,
+      price_change_percentage_24h: coin.price_change_percentage_24h || 0,
+      price_change_percentage_7d: coin.price_change_percentage_7d_in_currency || 0,
+      sparkline_in_7d: coin.sparkline_in_7d,
+      last_updated: coin.last_updated || new Date().toISOString(),
+    }));
+
+    console.log(`[CoinGecko] Fetched ${coins.length} ${category} coins`);
+    return coins;
+  } catch (error) {
+    console.error(`[CoinGecko] Error fetching ${category} coins:`, error);
+    return [];
+  }
+}
+
+/**
+ * Get all available categories
+ */
+export async function getAllCategories(): Promise<CategoryInfo[]> {
+  try {
+    const response = await api.get('/coins/categories/list');
+    return response.data;
+  } catch (error) {
+    console.error('[CoinGecko] Error fetching categories:', error);
+    return [];
+  }
+}
+
+/**
+ * Get meme coins
+ */
+export async function getMemeCoins(limit: number = 250): Promise<CoinPrice[]> {
+  return getCoinsByCategory('meme-token', limit);
+}
+
+/**
+ * Get AI coins
+ */
+export async function getAICoins(limit: number = 250): Promise<CoinPrice[]> {
+  return getCoinsByCategory('artificial-intelligence', limit);
+}
+
+/**
+ * Get DeFi coins
+ */
+export async function getDefiCoins(limit: number = 250): Promise<CoinPrice[]> {
+  return getCoinsByCategory('decentralized-finance-defi', limit);
+}
+
+// ============================================
+// Type definitions
+// ============================================
+
+interface CoinGeckoMarketCoin {
+  id: string;
+  symbol: string;
+  name: string;
+  image: string;
+  current_price: number;
+  market_cap: number;
+  market_cap_rank: number;
+  total_volume: number;
+  price_change_percentage_24h: number;
+  price_change_percentage_7d_in_currency?: number;
+  sparkline_in_7d?: { price: number[] };
+  last_updated: string;
+}
+
+interface CategoryInfo {
+  category_id: string;
+  name: string;
+}

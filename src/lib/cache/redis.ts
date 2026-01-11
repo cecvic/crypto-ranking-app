@@ -39,10 +39,17 @@ export const CACHE_KEYS = {
   RANKINGS_COIN: (coinId: string) => `rankings:coin:${coinId}`,
   RANKINGS_HISTORY: (coinId: string) => `rankings:history:${coinId}`,
 
-  // Prices (from CoinGecko)
+  // Prices (from CoinGecko - backward compatible)
   PRICES_LIST: 'prices:list',
   COIN_PREFIX: 'coin:',
   GLOBAL_DATA: 'global:data',
+
+  // Aggregated prices (from multiple sources)
+  PRICES_ALL: 'prices:all',
+  PRICES_MEME: 'prices:meme',
+  PRICES_AI: 'prices:ai',
+  PRICES_DEFI: 'prices:defi',
+  AGGREGATION_METADATA: 'aggregation:metadata',
 
   // Sentiment
   SENTIMENT_BATCH: 'sentiment:batch',
@@ -71,6 +78,9 @@ export const CACHE_TTL = {
 
   // Prices (refresh every minute, but cache for 2 mins for safety)
   PRICES: 120,                // 2 minutes
+
+  // Aggregated prices (refresh every 10 mins)
+  AGGREGATED_PRICES: 600,     // 10 minutes
 
   // Sentiment (refresh every 15 mins, cache for 20 mins)
   SENTIMENT: 1200,            // 20 minutes

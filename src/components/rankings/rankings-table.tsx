@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Table,
   TableBody,
@@ -12,19 +13,22 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sparkline } from '@/components/charts/sparkline';
 import { CoinRanking } from '@/lib/types';
 import { getSignalLabel } from '@/lib/ranking/calculator';
 import {
   ArrowUpIcon,
   ArrowDownIcon,
-  MinusIcon,
   SearchIcon,
   TrendingUpIcon,
   TrendingDownIcon,
+  Flame,
+  Brain,
+  Wallet,
+  LayoutGrid,
 } from 'lucide-react';
 
 interface RankingsTableProps {
@@ -32,17 +36,79 @@ interface RankingsTableProps {
   isLoading?: boolean;
 }
 
+type CategoryFilter = 'all' | 'meme' | 'ai' | 'defi';
 type SortField = 'rank' | 'price' | 'change24h' | 'score' | 'sentiment' | 'technical' | 'whale' | 'ai';
 type SortDirection = 'asc' | 'desc';
 
+// Row height for virtual scrolling
+const ROW_HEIGHT = 60;
+const VIRTUAL_SCROLL_THRESHOLD = 100; // Use virtual scroll when > 100 items
+
 export function RankingsTable({ rankings, isLoading }: RankingsTableProps) {
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [sortField, setSortField] = useState<SortField>('rank');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const parentRef = useRef<HTMLDivElement>(null);
 
   // Filter and sort rankings
   const filteredRankings = useMemo(() => {
     let filtered = [...rankings];
+
+    // Category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter((r) => {
+        // Check if coin has category metadata (from AggregatedCoin)
+        const coinId = r.coin.id.toLowerCase();
+        const coinName = r.coin.name.toLowerCase();
+
+        switch (categoryFilter) {
+          case 'meme':
+            // Match common meme coin patterns
+            return (
+              coinName.includes('doge') ||
+              coinName.includes('shib') ||
+              coinName.includes('pepe') ||
+              coinName.includes('bonk') ||
+              coinName.includes('meme') ||
+              coinName.includes('inu') ||
+              coinName.includes('cat') ||
+              coinName.includes('frog') ||
+              coinName.includes('wojak') ||
+              coinId.includes('meme') ||
+              coinId.includes('doge') ||
+              coinId.includes('shib') ||
+              coinId.includes('pepe')
+            );
+          case 'ai':
+            return (
+              coinName.includes('ai') ||
+              coinName.includes('artificial') ||
+              coinName.includes('neural') ||
+              coinName.includes('fetch') ||
+              coinName.includes('ocean') ||
+              coinName.includes('singularity') ||
+              coinId.includes('ai') ||
+              coinId.includes('artificial')
+            );
+          case 'defi':
+            return (
+              coinName.includes('defi') ||
+              coinName.includes('swap') ||
+              coinName.includes('lend') ||
+              coinName.includes('yield') ||
+              coinName.includes('aave') ||
+              coinName.includes('compound') ||
+              coinName.includes('uniswap') ||
+              coinName.includes('maker') ||
+              coinId.includes('defi') ||
+              coinId.includes('swap')
+            );
+          default:
+            return true;
+        }
+      });
+    }
 
     // Search filter
     if (search) {
@@ -99,16 +165,29 @@ export function RankingsTable({ rankings, isLoading }: RankingsTableProps) {
     });
 
     return filtered;
-  }, [rankings, search, sortField, sortDirection]);
+  }, [rankings, search, categoryFilter, sortField, sortDirection]);
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
+  // Virtual scrolling for large lists
+  const useVirtualScroll = filteredRankings.length > VIRTUAL_SCROLL_THRESHOLD;
+
+  const rowVirtualizer = useVirtualizer({
+    count: filteredRankings.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 10,
+    enabled: useVirtualScroll,
+  });
+
+  const handleSort = useCallback((field: SortField) => {
+    setSortField((currentField) => {
+      if (currentField === field) {
+        setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+        return field;
+      }
       setSortDirection(field === 'rank' ? 'asc' : 'desc');
-    }
-  };
+      return field;
+    });
+  }, []);
 
   const SortableHeader = ({
     field,
@@ -140,6 +219,28 @@ export function RankingsTable({ rankings, isLoading }: RankingsTableProps) {
 
   return (
     <div className="space-y-4">
+      {/* Category Filter Tabs */}
+      <Tabs value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as CategoryFilter)}>
+        <TabsList className="grid w-full max-w-md grid-cols-4">
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <LayoutGrid className="w-4 h-4" />
+            All
+          </TabsTrigger>
+          <TabsTrigger value="meme" className="flex items-center gap-2">
+            <Flame className="w-4 h-4" />
+            Meme
+          </TabsTrigger>
+          <TabsTrigger value="ai" className="flex items-center gap-2">
+            <Brain className="w-4 h-4" />
+            AI
+          </TabsTrigger>
+          <TabsTrigger value="defi" className="flex items-center gap-2">
+            <Wallet className="w-4 h-4" />
+            DeFi
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Search */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
@@ -153,33 +254,86 @@ export function RankingsTable({ rankings, isLoading }: RankingsTableProps) {
         </div>
         <div className="text-sm text-muted-foreground">
           Showing {filteredRankings.length} of {rankings.length} coins
+          {useVirtualScroll && <span className="ml-1">(virtualized)</span>}
         </div>
       </div>
 
       {/* Table */}
       <div className="rounded-lg border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/30">
-              <SortableHeader field="rank">#</SortableHeader>
-              <TableHead>Coin</TableHead>
-              <SortableHeader field="price">Price</SortableHeader>
-              <SortableHeader field="change24h">24h %</SortableHeader>
-              <TableHead>7d Chart</TableHead>
-              <SortableHeader field="score">Score</SortableHeader>
-              <SortableHeader field="sentiment">Sentiment</SortableHeader>
-              <SortableHeader field="technical">Technical</SortableHeader>
-              <SortableHeader field="whale">Whale</SortableHeader>
-              <SortableHeader field="ai">AI</SortableHeader>
-              <TableHead>Signal</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredRankings.map((ranking) => (
-              <RankingRow key={ranking.coin.id} ranking={ranking} />
-            ))}
-          </TableBody>
-        </Table>
+        {useVirtualScroll ? (
+          // Virtual scrolling table for large lists
+          <div ref={parentRef} className="h-[600px] overflow-auto">
+            <Table>
+              <TableHeader className="sticky top-0 bg-background z-10">
+                <TableRow className="bg-muted/30">
+                  <SortableHeader field="rank">#</SortableHeader>
+                  <TableHead>Coin</TableHead>
+                  <SortableHeader field="price">Price</SortableHeader>
+                  <SortableHeader field="change24h">24h %</SortableHeader>
+                  <TableHead>7d Chart</TableHead>
+                  <SortableHeader field="score">Score</SortableHeader>
+                  <SortableHeader field="sentiment">Sentiment</SortableHeader>
+                  <SortableHeader field="technical">Technical</SortableHeader>
+                  <SortableHeader field="whale">Whale</SortableHeader>
+                  <SortableHeader field="ai">AI</SortableHeader>
+                  <TableHead>Signal</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <tr style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+                  <td colSpan={11}>
+                    {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                      const ranking = filteredRankings[virtualRow.index];
+                      return (
+                        <div
+                          key={ranking.coin.id}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: `${virtualRow.size}px`,
+                            transform: `translateY(${virtualRow.start}px)`,
+                          }}
+                        >
+                          <Table>
+                            <TableBody>
+                              <RankingRow ranking={ranking} />
+                            </TableBody>
+                          </Table>
+                        </div>
+                      );
+                    })}
+                  </td>
+                </tr>
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          // Standard table for smaller lists
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <SortableHeader field="rank">#</SortableHeader>
+                <TableHead>Coin</TableHead>
+                <SortableHeader field="price">Price</SortableHeader>
+                <SortableHeader field="change24h">24h %</SortableHeader>
+                <TableHead>7d Chart</TableHead>
+                <SortableHeader field="score">Score</SortableHeader>
+                <SortableHeader field="sentiment">Sentiment</SortableHeader>
+                <SortableHeader field="technical">Technical</SortableHeader>
+                <SortableHeader field="whale">Whale</SortableHeader>
+                <SortableHeader field="ai">AI</SortableHeader>
+                <TableHead>Signal</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredRankings.map((ranking) => (
+                <RankingRow key={ranking.coin.id} ranking={ranking} />
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
   );
@@ -262,7 +416,7 @@ function RankingRow({ ranking }: { ranking: CoinRanking }) {
       <TableCell>
         <Link href={`/coin/${coin.id}`} className="flex items-center gap-3 hover:opacity-80">
           <Image
-            src={coin.image}
+            src={coin.image || '/placeholder-coin.png'}
             alt={coin.name}
             width={32}
             height={32}
@@ -320,6 +474,7 @@ function RankingRow({ ranking }: { ranking: CoinRanking }) {
 function RankingsTableSkeleton() {
   return (
     <div className="space-y-4">
+      <Skeleton className="h-10 w-full max-w-md" />
       <Skeleton className="h-10 w-64" />
       <div className="rounded-lg border">
         <Table>
