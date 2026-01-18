@@ -15,6 +15,7 @@ import {
   SearchIcon,
   BellIcon,
   MenuIcon,
+  BotIcon,
 } from 'lucide-react';
 
 export function DashboardHeader() {
@@ -79,6 +80,20 @@ export function DashboardHeader() {
             />
           </div>
 
+          {/* AI Chat Button - prominent placement with glow effect */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative group"
+            asChild
+          >
+            <Link href="/dashboard/chat">
+              <BotIcon className="h-5 w-5 text-primary group-hover:text-primary/80 transition-colors" />
+              {/* Animated pulse indicator for feature highlight */}
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full animate-pulse" />
+            </Link>
+          </Button>
+
           {/* Notifications */}
           <Button variant="ghost" size="icon" className="relative">
             <BellIcon className="h-5 w-5" />
@@ -103,6 +118,12 @@ export function DashboardHeader() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/chat">
+                  <BotIcon className="mr-2 h-4 w-4" />
+                  AI Chat
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/dashboard">Dashboard</Link>
               </DropdownMenuItem>
