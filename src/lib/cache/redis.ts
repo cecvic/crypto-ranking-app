@@ -64,6 +64,17 @@ export const CACHE_KEYS = {
 
   // Rate limiting
   RATE_LIMIT: (api: string) => `ratelimit:${api}`,
+
+  // Opportunity Radar
+  OPPORTUNITIES_ACTIVE: 'opportunities:active',
+  OPPORTUNITIES_BY_CHAIN: (chain: string) => `opportunities:chain:${chain}`,
+
+  // DeFi Protocols (DefiLlama)
+  DEFI_PROTOCOLS: (limit: number) => `defi:protocols:top${limit}`,
+  DEFI_PROTOCOL: (slug: string) => `defi:protocol:${slug}`,
+
+  // OHLC Chart Data (CoinGecko)
+  OHLC: (tokenId: string, days: number) => `ohlc:${tokenId}:${days}`,
 } as const;
 
 // ============================================
@@ -94,6 +105,16 @@ export const CACHE_TTL = {
   PREDICTIONS: 4500,          // 75 minutes
 
   RATE_LIMIT_WINDOW: 60,      // 1 minute window
+
+  // Opportunity Radar
+  OPPORTUNITIES: 120,         // 2 minutes - matches polling cadence
+
+  // DeFi Protocols (DefiLlama - TVL changes slowly)
+  DEFI_PROTOCOLS: 300,        // 5 minutes
+  DEFI_PROTOCOL: 300,         // 5 minutes
+
+  // OHLC Chart Data
+  OHLC: 300,                  // 5 minutes
 } as const;
 
 // ============================================
