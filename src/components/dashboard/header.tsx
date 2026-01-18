@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { UserButton } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  LineChartIcon,
   SearchIcon,
   BellIcon,
   MenuIcon,
@@ -23,9 +23,15 @@ export function DashboardHeader() {
       <div className="container flex h-14 items-center">
         {/* Logo */}
         <Link href="/dashboard" className="flex items-center gap-2 mr-6">
-          <LineChartIcon className="h-6 w-6 text-primary" />
+          <Image
+            src="https://media.licdn.com/dms/image/v2/D560BAQHqjfvEKywCaA/company-logo_200_200/company-logo_200_200/0/1700268040211?e=1769644800&v=beta&t=2eshwxS2veQKNMM6qzGG6DLdBnJ_l0SfIHQeCQU0Yo4"
+            alt="Trendhubs"
+            width={28}
+            height={28}
+            className="rounded-md"
+          />
           <span className="font-bold text-lg hidden sm:inline-block">
-            CryptoRank
+            Trendhubs
           </span>
         </Link>
 

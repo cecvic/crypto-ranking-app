@@ -252,6 +252,23 @@
     0 0 90px rgba(99, 102, 241, 0.2);
 }
 
+/* Hero CTA enhanced glow - more dramatic effect */
+.glow-primary-hero {
+  box-shadow:
+    0 0 30px rgba(99, 102, 241, 0.4),
+    0 0 60px rgba(99, 102, 241, 0.3),
+    0 0 90px rgba(99, 102, 241, 0.2),
+    0 0 120px rgba(99, 102, 241, 0.1);
+}
+
+.glow-primary-hero:hover {
+  box-shadow:
+    0 0 40px rgba(99, 102, 241, 0.6),
+    0 0 80px rgba(99, 102, 241, 0.4),
+    0 0 120px rgba(99, 102, 241, 0.3),
+    0 0 160px rgba(99, 102, 241, 0.2);
+}
+
 .glow-accent {
   box-shadow:
     0 0 20px rgba(139, 92, 246, 0.3),

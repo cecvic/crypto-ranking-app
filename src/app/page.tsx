@@ -1,6 +1,6 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import {
-  LineChartIcon,
   TrendingUpIcon,
   BrainCircuitIcon,
   WalletIcon,
@@ -9,6 +9,7 @@ import {
   BarChart3Icon,
   ShieldCheckIcon,
   SparklesIcon,
+  UsersIcon,
 } from 'lucide-react';
 import { AnimatedBackground } from '@/components/landing/animated-background';
 import { GlassCard, FeatureCard, StatCard } from '@/components/landing/glass-card';
@@ -21,6 +22,12 @@ import {
   StaggerItem,
 } from '@/components/landing/animated-text';
 import { GlowButton, AnimatedButtonGroup, PulseIndicator } from '@/components/landing/glow-button';
+import { TrustLogos } from '@/components/landing/trust-logos';
+import { DashboardPreview } from '@/components/landing/dashboard-preview';
+import { UseCasesSection } from '@/components/landing/use-cases';
+import { FAQSection } from '@/components/landing/faq';
+import { CommunitySection } from '@/components/landing/community';
+import { SectionDivider } from '@/components/landing/section-divider';
 
 async function getFearGreed() {
   try {
@@ -44,10 +51,14 @@ export default async function LandingPage() {
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
         <div className="container flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
-              <LineChartIcon className="h-5 w-5 text-primary" />
-            </div>
-            <span className="font-bold text-lg">CryptoRank</span>
+            <Image
+              src="https://media.licdn.com/dms/image/v2/D560BAQHqjfvEKywCaA/company-logo_200_200/company-logo_200_200/0/1700268040211?e=1769644800&v=beta&t=2eshwxS2veQKNMM6qzGG6DLdBnJ_l0SfIHQeCQU0Yo4"
+              alt="Trendhubs"
+              width={40}
+              height={40}
+              className="rounded-xl"
+            />
+            <span className="font-bold text-lg">Trendhubs</span>
           </Link>
           <div className="flex items-center gap-3">
             <Link
@@ -90,14 +101,33 @@ export default async function LandingPage() {
             </GlowButton>
           </AnimatedButtonGroup>
 
+          {/* Social Proof */}
+          <FadeUpText delay={0.6} className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
+            <div className="flex -space-x-2">
+              <div className="w-8 h-8 rounded-full bg-primary/30 flex items-center justify-center border-2 border-background">
+                <UsersIcon className="h-4 w-4 text-primary" />
+              </div>
+              <div className="w-8 h-8 rounded-full bg-accent/30 flex items-center justify-center border-2 border-background">
+                <span className="text-xs font-bold text-accent">+</span>
+              </div>
+            </div>
+            <span>Join <span className="text-foreground font-semibold">2,500+</span> traders tracking the market</span>
+          </FadeUpText>
+
           {/* Fear & Greed Indicator */}
           {fearGreed && (
             <div className="pt-8">
               <PulseIndicator value={fearGreed.value} label={fearGreed.value_classification} />
             </div>
           )}
+
+          {/* Dashboard Preview */}
+          <DashboardPreview />
         </div>
       </section>
+
+      {/* Trust Logos */}
+      <TrustLogos />
 
       {/* Features Section */}
       <section className="py-24 px-4">
@@ -158,6 +188,13 @@ export default async function LandingPage() {
           </StaggerContainer>
         </div>
       </section>
+
+      <SectionDivider variant="gradient" />
+
+      {/* Use Cases / Personas */}
+      <UseCasesSection />
+
+      <SectionDivider variant="dots" />
 
       {/* Stats Section */}
       <section className="py-24 px-4">
@@ -245,6 +282,14 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      <SectionDivider variant="glow" />
+
+      {/* FAQ Section */}
+      <FAQSection />
+
+      {/* Community Section */}
+      <CommunitySection />
+
       {/* CTA Section */}
       <section className="py-24 px-4">
         <div className="container max-w-4xl">
@@ -255,7 +300,7 @@ export default async function LandingPage() {
                 Ready to Make <GradientText>Smarter Trades</GradientText>?
               </h2>
               <p className="text-muted-foreground text-fluid-base max-w-xl mx-auto mb-8">
-                Join CryptoRank today and get access to AI-powered rankings for the top 100
+                Join Trendhubs today and get access to AI-powered rankings for the top 100
                 cryptocurrencies.
               </p>
               <GlowButton
@@ -271,26 +316,88 @@ export default async function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 border-t border-white/5">
+      <footer className="py-16 px-4 border-t border-white/5">
         <div className="container max-w-6xl">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                <LineChartIcon className="h-4 w-4 text-primary" />
-              </div>
-              <span className="font-semibold">CryptoRank</span>
-            </div>
-            <div className="text-center text-sm text-muted-foreground">
-              <p>Data from CoinGecko, LunarCrush, TAAPI, DefiLlama & more</p>
-              <p className="mt-1 text-xs">Not financial advice. Do your own research.</p>
-            </div>
-            <div className="flex gap-4 text-sm text-muted-foreground">
-              <Link href="/sign-in" className="hover:text-foreground transition-colors">
-                Sign In
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+            {/* Brand column */}
+            <div className="col-span-2 md:col-span-1">
+              <Link href="/" className="flex items-center gap-2 mb-4">
+                <Image
+                  src="https://media.licdn.com/dms/image/v2/D560BAQHqjfvEKywCaA/company-logo_200_200/company-logo_200_200/0/1700268040211?e=1769644800&v=beta&t=2eshwxS2veQKNMM6qzGG6DLdBnJ_l0SfIHQeCQU0Yo4"
+                  alt="Trendhubs"
+                  width={40}
+                  height={40}
+                  className="rounded-xl"
+                />
+                <span className="font-bold text-lg">Trendhubs</span>
               </Link>
-              <Link href="/sign-up" className="hover:text-foreground transition-colors">
-                Sign Up
-              </Link>
+              <p className="text-sm text-muted-foreground">
+                AI-powered crypto analytics for smarter trading decisions.
+              </p>
+            </div>
+
+            {/* Product links */}
+            <div>
+              <h4 className="font-semibold mb-4 text-sm">Product</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <Link href="/rankings" className="hover:text-foreground transition-colors">
+                    Rankings
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/whale-alerts" className="hover:text-foreground transition-colors">
+                    Whale Alerts
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/confluence" className="hover:text-foreground transition-colors">
+                    Confluence Radar
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Resources links */}
+            <div>
+              <h4 className="font-semibold mb-4 text-sm">Resources</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <a href="#faq" className="hover:text-foreground transition-colors">
+                    FAQ
+                  </a>
+                </li>
+                <li>
+                  <span className="cursor-default opacity-60">API (Coming Soon)</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal links */}
+            <div>
+              <h4 className="font-semibold mb-4 text-sm">Legal</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <Link href="/privacy" className="hover:text-foreground transition-colors">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="hover:text-foreground transition-colors">
+                    Terms of Service
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-white/5">
+            <div className="text-sm text-muted-foreground">
+              Data from CoinGecko, LunarCrush, TAAPI, DefiLlama & more
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Not financial advice. Do your own research.
             </div>
           </div>
         </div>

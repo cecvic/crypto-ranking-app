@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
         hostname: "assets.coingecko.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "media.licdn.com",
+        pathname: "/dms/image/**",
+      },
     ],
   },
 };

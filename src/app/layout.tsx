@@ -15,7 +15,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CryptoRank - Live Crypto Ranking System",
+  title: "Trendhubs - Live Crypto Ranking System",
   description: "Real-time cryptocurrency ranking based on sentiment, technical analysis, whale activity, and AI predictions",
 };
 

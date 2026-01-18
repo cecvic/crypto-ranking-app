@@ -66,7 +66,7 @@ export function AnimatedButtonGroup({ children, className }: AnimatedButtonGroup
         delay: 0.4,
         ease: [0.21, 0.47, 0.32, 0.98],
       }}
-      className={cn('flex flex-col sm:flex-row items-center gap-4', className)}
+      className={cn('flex flex-col sm:flex-row items-center justify-center gap-4', className)}
     >
       {children}
     </motion.div>
