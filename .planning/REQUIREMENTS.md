@@ -75,27 +75,27 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | TBD | Pending |
-| DATA-02 | TBD | Pending |
-| DATA-03 | TBD | Pending |
-| DATA-04 | TBD | Pending |
-| DATA-05 | TBD | Pending |
-| CHAIN-01 | TBD | Pending |
-| CHAIN-02 | TBD | Pending |
-| CHAIN-03 | TBD | Pending |
-| CHAIN-04 | TBD | Pending |
-| WHALE-01 | TBD | Pending |
-| WHALE-02 | TBD | Pending |
-| WHALE-03 | TBD | Pending |
-| DISC-01 | TBD | Pending |
-| DISC-02 | TBD | Pending |
-| DISC-03 | TBD | Pending |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| DATA-03 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Pending |
+| DATA-05 | Phase 1 | Pending |
+| CHAIN-01 | Phase 1 | Pending |
+| CHAIN-02 | Phase 1 | Pending |
+| CHAIN-03 | Phase 1 | Pending |
+| CHAIN-04 | Phase 1 | Pending |
+| WHALE-01 | Phase 2 | Pending |
+| WHALE-02 | Phase 2 | Pending |
+| WHALE-03 | Phase 2 | Pending |
+| DISC-01 | Phase 3 | Pending |
+| DISC-02 | Phase 3 | Pending |
+| DISC-03 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 15 total
-- Mapped to phases: 0
-- Unmapped: 15 ⚠️
+- Mapped to phases: 15
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-21*
-*Last updated: 2026-01-21 after initial definition*
+*Last updated: 2026-01-21 after roadmap creation*
