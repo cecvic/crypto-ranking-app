@@ -18,6 +18,18 @@
 
 **Goal:** App displays multi-chain token prices from Birdeye instead of CoinGecko
 
+**Plans:** 8 plans
+
+Plans:
+- [ ] 01-01-PLAN.md - Birdeye API client + schema + rate limiting foundation
+- [ ] 01-02-PLAN.md - Database queries + Redis cache keys
+- [ ] 01-03-PLAN.md - Price polling cron job
+- [ ] 01-04-PLAN.md - Token seeding cron job
+- [ ] 01-05-PLAN.md - API endpoints (/api/tokens)
+- [ ] 01-06-PLAN.md - React hook (useBirdeyeTokens)
+- [ ] 01-07-PLAN.md - UI components (table + chain selector)
+- [ ] 01-08-PLAN.md - Tokens page + navigation + integration test
+
 **Requirements:**
 - DATA-01: App fetches token prices from Birdeye `/defi/price` endpoint instead of CoinGecko
 - DATA-02: App fetches token volume data from Birdeye market data endpoint
@@ -44,6 +56,11 @@
 
 **Goal:** Dashboard shows DEX-sourced whale activity from on-chain trades
 
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (created by /gsd:plan-phase)
+
 **Requirements:**
 - WHALE-01: App fetches large DEX trades from Birdeye `/defi/v3/trades/token-by-volume` endpoint
 - WHALE-02: Whale data integrated into existing whale activity score calculation
@@ -61,6 +78,11 @@
 ### Phase 3: Token Discovery
 
 **Goal:** Dashboard displays trending tokens for new opportunity detection
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (created by /gsd:plan-phase)
 
 **Requirements:**
 - DISC-01: App fetches trending tokens from Birdeye `/defi/token_trending` endpoint
@@ -89,3 +111,4 @@
 
 ---
 *Roadmap created: 2026-01-21*
+*Phase 1 planned: 2026-01-22*
