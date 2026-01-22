@@ -9,12 +9,12 @@
 ## Current Position
 
 **Phase:** 1 of 3 - Core Data Pipeline
-**Plan:** 4 of 8 complete
+**Plan:** 5 of 8 complete
 **Status:** In progress
 
 **Progress:**
 ```
-Phase 1: [####----] Core Data Pipeline (4/8 plans)
+Phase 1: [#####---] Core Data Pipeline (5/8 plans)
 Phase 2: [        ] Whale Detection
 Phase 3: [        ] Token Discovery
 ```
@@ -24,7 +24,7 @@ Phase 3: [        ] Token Discovery
 | Metric | Value |
 |--------|-------|
 | Phases completed | 0/3 |
-| Plans completed | 4/8 |
+| Plans completed | 5/8 |
 | Requirements delivered | 0/15 |
 
 ## Accumulated Context
@@ -41,6 +41,7 @@ Phase 3: [        ] Token Discovery
 | 15min base TTL with 30min stale | Dynamic caching based on rate limit headroom percentage | 2026-01-22 |
 | 150 tokens per chain | Middle of 100-200 range, balances coverage vs API usage | 2026-01-22 |
 | Sequential chain processing | One chain at a time to manage shared account-level rate limit | 2026-01-22 |
+| 1min staleTime for hooks | Balances freshness with API efficiency | 2026-01-22 |
 
 ### Technical Todos
 
@@ -60,7 +61,7 @@ Phase 3: [        ] Token Discovery
 ## Session Continuity
 
 **Last session:** 2026-01-22
-**Stopped at:** Completed 01-04-PLAN.md
+**Stopped at:** Completed 01-05-PLAN.md (Token API Endpoints)
 **Resume file:** None
 
 ---
