@@ -2,7 +2,7 @@
 
 **Created:** 2026-01-21
 **Depth:** quick
-**Phases:** 4
+**Phases:** 3
 
 ## Phase Overview
 
@@ -11,7 +11,6 @@
 | 1 | Core Data Pipeline | App displays multi-chain token prices from Birdeye | DATA-01, DATA-02, DATA-03, DATA-04, DATA-05, CHAIN-01, CHAIN-02, CHAIN-03, CHAIN-04 | 5 |
 | 2 | Whale Detection | Dashboard shows DEX-sourced whale activity | WHALE-01, WHALE-02, WHALE-03 | 3 |
 | 3 | Token Discovery | Dashboard displays trending tokens across chains | DISC-01, DISC-02, DISC-03 | 3 |
-| 4 | Activity Rankings & Search | Tokens ranked by activity/opportunity with global search | RANK-01, RANK-02, RANK-03, SEARCH-01, SEARCH-02 | 4 |
 
 ## Phase Details
 
@@ -57,15 +56,16 @@ Plans:
 
 **Goal:** Dashboard shows DEX-sourced whale activity from on-chain trades
 
-**Plans:** 3 plans
+**Plans:** 4 plans
 
 Plans:
-- [x] 02-01-PLAN.md - Database schema + Birdeye whale trades API function
-- [x] 02-02-PLAN.md - Whale trade polling cron job + database queries
-- [x] 02-03-PLAN.md - Whale indicator UI component + API integration
+- [ ] 02-01-PLAN.md - DEX trades schema + Birdeye API extension
+- [ ] 02-02-PLAN.md - Database queries for DEX trade metrics
+- [ ] 02-03-PLAN.md - Whale trade polling cron + score integration
+- [ ] 02-04-PLAN.md - DEX whale UI components + API endpoint
 
 **Requirements:**
-- WHALE-01: App fetches large DEX trades from Birdeye `/defi/v3/trades/token-by-volume` endpoint
+- WHALE-01: App fetches large DEX trades from Birdeye `/defi/v3/token/txs-by-volume` endpoint
 - WHALE-02: Whale data integrated into existing whale activity score calculation
 - WHALE-03: Dashboard displays DEX-sourced whale activity metrics
 
@@ -101,51 +101,18 @@ Plans:
 
 ---
 
-### Phase 4: Activity Rankings & Search
-
-**Goal:** Tokens ranked by activity and opportunity metrics with global search to find any coin
-
-**Plans:** 5 plans
-
-Plans:
-- [ ] 04-01-PLAN.md - Database schema + scoring library (activity/opportunity score functions)
-- [ ] 04-02-PLAN.md - Birdeye API extension (Token Overview, Search) + shadcn Command install
-- [ ] 04-03-PLAN.md - Activity data cron job + activity-ranked API endpoint
-- [ ] 04-04-PLAN.md - Search API + useTokenSearch hook + GlobalSearch component
-- [ ] 04-05-PLAN.md - UI integration (score badges, table update, search in header)
-
-**Requirements:**
-- RANK-01: App ranks tokens by activity score (volume, trades, unique wallets) instead of market cap
-- RANK-02: App calculates opportunity score combining activity metrics, price momentum, and liquidity
-- RANK-03: Rankings table displays activity and opportunity scores with visual indicators
-- SEARCH-01: Global search bar searches all tokens across all chains by name, symbol, or address
-- SEARCH-02: Search results display with relevant token info and link to token details
-
-**Success Criteria:**
-1. User sees tokens ranked by activity/opportunity by default (not market cap)
-2. User understands why a token ranks high via visible activity metrics
-3. User can search for any token using the top search bar
-4. Search returns results across all 11 supported chains
-
-**Dependencies:** Phase 1
-
----
-
 ## Coverage
 
 | Category | Requirements | Phase | Status |
 |----------|-------------|-------|--------|
 | Data Collection | DATA-01, DATA-02, DATA-03, DATA-04, DATA-05 | Phase 1 | Complete |
 | Multi-Chain | CHAIN-01, CHAIN-02, CHAIN-03, CHAIN-04 | Phase 1 | Complete |
-| Whale Detection | WHALE-01, WHALE-02, WHALE-03 | Phase 2 | Complete |
+| Whale Detection | WHALE-01, WHALE-02, WHALE-03 | Phase 2 | Pending |
 | Token Discovery | DISC-01, DISC-02, DISC-03 | Phase 3 | Pending |
-| Activity Rankings | RANK-01, RANK-02, RANK-03 | Phase 4 | Pending |
-| Token Search | SEARCH-01, SEARCH-02 | Phase 4 | Pending |
 
-**Total:** 20/20 requirements mapped
+**Total:** 15/15 requirements mapped
 
 ---
 *Roadmap created: 2026-01-21*
 *Phase 1 planned: 2026-01-22*
-*Phase 2 planned: 2026-01-27*
-*Phase 4 planned: 2026-01-27*
+*Phase 2 planned: 2026-01-22*
