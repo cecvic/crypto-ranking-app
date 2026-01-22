@@ -9,12 +9,12 @@
 ## Current Position
 
 **Phase:** 1 of 3 - Core Data Pipeline
-**Plan:** 6 of 8 complete
-**Status:** In progress
+**Plan:** 8 of 8 complete
+**Status:** Complete
 
 **Progress:**
 ```
-Phase 1: [######--] Core Data Pipeline (6/8 plans)
+Phase 1: [########] Core Data Pipeline (8/8 plans) ✓
 Phase 2: [        ] Whale Detection
 Phase 3: [        ] Token Discovery
 ```
@@ -23,9 +23,9 @@ Phase 3: [        ] Token Discovery
 
 | Metric | Value |
 |--------|-------|
-| Phases completed | 0/3 |
-| Plans completed | 6/8 |
-| Requirements delivered | 0/15 |
+| Phases completed | 1/3 |
+| Plans completed | 8/8 |
+| Requirements delivered | 9/15 |
 
 ## Accumulated Context
 
@@ -44,6 +44,8 @@ Phase 3: [        ] Token Discovery
 | 1min staleTime for hooks | Balances freshness with API efficiency | 2026-01-22 |
 | Chain abbreviations as icons | Use SOL/ETH/etc text instead of chain images for simplicity | 2026-01-22 |
 | React.ReactElement over JSX.Element | React 19 compatibility for component return types | 2026-01-22 |
+| 50 tokens per chain | Birdeye API enforces max 50 per request (not 150 as planned) | 2026-01-22 |
+| Request interceptor for API key | Env vars not available at module load time in Next.js | 2026-01-22 |
 
 ### Technical Todos
 
@@ -63,7 +65,7 @@ Phase 3: [        ] Token Discovery
 ## Session Continuity
 
 **Last session:** 2026-01-22
-**Stopped at:** Completed 01-07-PLAN.md (Token UI Components)
+**Stopped at:** Completed Phase 1 (Core Data Pipeline)
 **Resume file:** None
 
 ---

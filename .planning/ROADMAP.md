@@ -21,14 +21,14 @@
 **Plans:** 8 plans
 
 Plans:
-- [ ] 01-01-PLAN.md - Birdeye API client + schema + rate limiting foundation
-- [ ] 01-02-PLAN.md - Database queries + Redis cache keys
-- [ ] 01-03-PLAN.md - Price polling cron job
-- [ ] 01-04-PLAN.md - Token seeding cron job
-- [ ] 01-05-PLAN.md - API endpoints (/api/tokens)
-- [ ] 01-06-PLAN.md - React hook (useBirdeyeTokens)
-- [ ] 01-07-PLAN.md - UI components (table + chain selector)
-- [ ] 01-08-PLAN.md - Tokens page + navigation + integration test
+- [x] 01-01-PLAN.md - Birdeye API client + schema + rate limiting foundation
+- [x] 01-02-PLAN.md - Database queries + Redis cache keys
+- [x] 01-03-PLAN.md - Price polling cron job
+- [x] 01-04-PLAN.md - Token seeding cron job
+- [x] 01-05-PLAN.md - API endpoints (/api/tokens)
+- [x] 01-06-PLAN.md - React hook (useBirdeyeTokens)
+- [x] 01-07-PLAN.md - UI components (table + chain selector)
+- [x] 01-08-PLAN.md - Tokens page + navigation + integration test
 
 **Requirements:**
 - DATA-01: App fetches token prices from Birdeye `/defi/price` endpoint instead of CoinGecko
@@ -102,8 +102,8 @@ Plans:
 
 | Category | Requirements | Phase | Status |
 |----------|-------------|-------|--------|
-| Data Collection | DATA-01, DATA-02, DATA-03, DATA-04, DATA-05 | Phase 1 | Pending |
-| Multi-Chain | CHAIN-01, CHAIN-02, CHAIN-03, CHAIN-04 | Phase 1 | Pending |
+| Data Collection | DATA-01, DATA-02, DATA-03, DATA-04, DATA-05 | Phase 1 | Complete |
+| Multi-Chain | CHAIN-01, CHAIN-02, CHAIN-03, CHAIN-04 | Phase 1 | Complete |
 | Whale Detection | WHALE-01, WHALE-02, WHALE-03 | Phase 2 | Pending |
 | Token Discovery | DISC-01, DISC-02, DISC-03 | Phase 3 | Pending |
 
