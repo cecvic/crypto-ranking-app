@@ -75,6 +75,12 @@ export const CACHE_KEYS = {
 
   // OHLC Chart Data (CoinGecko)
   OHLC: (tokenId: string, days: number) => `ohlc:${tokenId}:${days}`,
+
+  // Birdeye multi-chain prices
+  BIRDEYE_PRICES_ALL: 'birdeye:prices:all',
+  BIRDEYE_PRICES_CHAIN: (chain: string) => `birdeye:prices:chain:${chain}`,
+  BIRDEYE_TOKEN: (chain: string, address: string) => `birdeye:token:${chain}:${address}`,
+  BIRDEYE_RATE_HEADROOM: 'birdeye:rate:headroom',
 } as const;
 
 // ============================================
@@ -115,6 +121,11 @@ export const CACHE_TTL = {
 
   // OHLC Chart Data
   OHLC: 300,                  // 5 minutes
+
+  // Birdeye prices (15-30 min based on context decision)
+  BIRDEYE_PRICES: 900,           // 15 minutes base TTL
+  BIRDEYE_PRICES_STALE: 1800,    // 30 minutes max for stale-while-revalidate
+  BIRDEYE_TOKEN: 900,            // 15 minutes individual token
 } as const;
 
 // ============================================
@@ -223,5 +234,23 @@ export async function checkRedisConnection(): Promise<boolean> {
     return true;
   } catch {
     return false;
+  }
+}
+
+// ============================================
+// BIRDEYE DYNAMIC TTL
+// ============================================
+
+/**
+ * Calculate dynamic TTL based on rate limit headroom
+ * When rate limits are tight, increase TTL to reduce API calls
+ */
+export function getBirdeyeDynamicTTL(headroomPercent: number): number {
+  if (headroomPercent > 50) {
+    return CACHE_TTL.BIRDEYE_PRICES;  // 15 min - plenty of headroom
+  } else if (headroomPercent > 20) {
+    return 1200;  // 20 min - moderate headroom
+  } else {
+    return CACHE_TTL.BIRDEYE_PRICES_STALE;  // 30 min - tight headroom
   }
 }
