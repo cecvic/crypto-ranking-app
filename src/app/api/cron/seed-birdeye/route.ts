@@ -11,8 +11,8 @@ import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limiter/distributed';
 // Route config for extended timeout
 export const maxDuration = 60;
 
-// Tokens to seed per chain (based on CONTEXT.md: 100-200 per chain)
-const TOKENS_PER_CHAIN = 150;
+// Tokens to seed per chain (Birdeye API max is 50 per request)
+const TOKENS_PER_CHAIN = 50;
 
 // Chains in priority order
 const CHAIN_PRIORITY: BirdeyeChain[] = [
@@ -32,6 +32,7 @@ const CHAIN_PRIORITY: BirdeyeChain[] = [
 async function handler(req: NextRequest): Promise<NextResponse> {
   const startTime = Date.now();
   console.log('[seed-birdeye] Starting token registry seeding...');
+  console.log('[seed-birdeye] BIRDEYE_API_KEY exists:', !!process.env.BIRDEYE_API_KEY, 'length:', process.env.BIRDEYE_API_KEY?.length ?? 0);
 
   const results: Record<string, { added: number; updated: number; error?: string }> = {};
   let totalAdded = 0;

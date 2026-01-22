@@ -51,6 +51,7 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 500);
     const sortBy = (searchParams.get('sortBy') || 'marketCap') as 'marketCap' | 'volume24h';
     const chain = searchParams.get('chain') as BirdeyeChain | null;
+    const skipCache = searchParams.get('nocache') === 'true' && process.env.NODE_ENV !== 'production';
 
     // Validate chain if provided
     if (chain && !Object.keys(BIRDEYE_CHAINS).includes(chain)) {
@@ -65,16 +66,18 @@ export async function GET(req: NextRequest) {
       ? `${CACHE_KEYS.BIRDEYE_PRICES_CHAIN(chain)}:list:${limit}:${sortBy}`
       : `${CACHE_KEYS.BIRDEYE_PRICES_ALL}:list:${limit}:${sortBy}`;
 
-    // Try cache first
-    const cached = await getCached<TokenResponse[]>(cacheKey);
-    if (cached) {
-      return NextResponse.json({
-        data: cached,
-        cached: true,
-        chain: chain || 'all',
-        count: cached.length,
-        timestamp: new Date().toISOString(),
-      });
+    // Try cache first (unless skipCache is set)
+    if (!skipCache) {
+      const cached = await getCached<TokenResponse[]>(cacheKey);
+      if (cached) {
+        return NextResponse.json({
+          data: cached,
+          cached: true,
+          chain: chain || 'all',
+          count: cached.length,
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
 
     // Fetch from database

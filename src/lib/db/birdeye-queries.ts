@@ -45,7 +45,7 @@ export async function seedTokensFromBirdeye(
         priceChange24h: token.priceChange24h?.toString(),
         volume24h: token.volume24hUSD?.toString(),
         liquidity: token.liquidity?.toString(),
-        marketCap: token.mc,
+        marketCap: token.mc ? Math.round(token.mc) : null, // bigint requires integer
         lastFetchedAt: new Date(),
       });
       added++;
@@ -59,7 +59,7 @@ export async function seedTokensFromBirdeye(
           priceChange24h: token.priceChange24h?.toString(),
           volume24h: token.volume24hUSD?.toString(),
           liquidity: token.liquidity?.toString(),
-          marketCap: token.mc,
+          marketCap: token.mc ? Math.round(token.mc) : null, // bigint requires integer
           lastFetchedAt: new Date(),
           updatedAt: new Date(),
         })

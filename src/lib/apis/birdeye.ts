@@ -14,8 +14,12 @@ const api = axios.create({
 
 // Add API key dynamically per-request (env vars may not be available at module load time)
 api.interceptors.request.use((config) => {
-  if (process.env.BIRDEYE_API_KEY) {
-    config.headers['X-API-KEY'] = process.env.BIRDEYE_API_KEY;
+  const apiKey = process.env.BIRDEYE_API_KEY;
+  if (apiKey) {
+    config.headers['X-API-KEY'] = apiKey;
+    console.log(`[Birdeye] API key set (length: ${apiKey.length})`);
+  } else {
+    console.warn('[Birdeye] WARNING: No API key found in BIRDEYE_API_KEY env var');
   }
   return config;
 });
@@ -290,8 +294,10 @@ export async function getTokenList(
   limit: number = 50,
   sortBy: 'mc' | 'v24hUSD' = 'v24hUSD' // Default to volume - mc returns spam tokens with fake values
 ): Promise<BirdeyeToken[]> {
+  // Birdeye API max limit is 50
+  const cappedLimit = Math.min(limit, 50);
   try {
-    console.log(`[Birdeye] Fetching token list on ${chain} sorted by ${sortBy}...`);
+    console.log(`[Birdeye] Fetching token list on ${chain} sorted by ${sortBy} (limit: ${cappedLimit})...`);
 
     const response = await api.get<BirdeyeTokenListResponse>('/defi/tokenlist', {
       params: {
@@ -299,7 +305,7 @@ export async function getTokenList(
         sort_by: sortBy,
         sort_type: 'desc',
         offset: 0,
-        limit,
+        limit: cappedLimit,
       },
       headers: {
         'x-chain': chain,
@@ -326,8 +332,16 @@ export async function getTokenList(
 
     console.log(`[Birdeye] Found ${tokens.length} tokens on ${chain} (sorted by ${sortBy})`);
     return tokens;
-  } catch (error) {
-    console.error(`[Birdeye] Error fetching token list on ${chain}:`, error);
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response) {
+      console.error(`[Birdeye] Error fetching token list on ${chain}:`, {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers,
+      });
+    } else {
+      console.error(`[Birdeye] Error fetching token list on ${chain}:`, error);
+    }
     return [];
   }
 }

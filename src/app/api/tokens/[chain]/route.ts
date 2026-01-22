@@ -65,20 +65,23 @@ export async function GET(req: NextRequest, context: RouteContext) {
     const { searchParams } = new URL(req.url);
     const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 500);
     const sortBy = (searchParams.get('sortBy') || 'marketCap') as 'marketCap' | 'volume24h';
+    const skipCache = searchParams.get('nocache') === 'true' && process.env.NODE_ENV !== 'production';
 
     // Build cache key
     const cacheKey = `${CACHE_KEYS.BIRDEYE_PRICES_CHAIN(chain)}:list:${limit}:${sortBy}`;
 
-    // Try cache first
-    const cached = await getCached<TokenResponse[]>(cacheKey);
-    if (cached) {
-      return NextResponse.json({
-        data: cached,
-        cached: true,
-        chain,
-        count: cached.length,
-        timestamp: new Date().toISOString(),
-      });
+    // Try cache first (unless skipCache is set)
+    if (!skipCache) {
+      const cached = await getCached<TokenResponse[]>(cacheKey);
+      if (cached) {
+        return NextResponse.json({
+          data: cached,
+          cached: true,
+          chain,
+          count: cached.length,
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
 
     // Fetch from database
