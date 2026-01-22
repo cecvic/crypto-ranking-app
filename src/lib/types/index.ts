@@ -340,3 +340,82 @@ export interface AggregationResult {
 
 // Re-export confluence types
 export * from './confluence';
+
+// ============================================
+// Birdeye API Types
+// ============================================
+
+/**
+ * All 11 Birdeye-supported chains
+ */
+export type BirdeyeSupportedChain =
+  | 'solana'
+  | 'ethereum'
+  | 'arbitrum'
+  | 'avalanche'
+  | 'bsc'
+  | 'optimism'
+  | 'polygon'
+  | 'base'
+  | 'zksync'
+  | 'sui'
+  | 'aptos';
+
+export interface BirdeyeToken {
+  address: string;
+  symbol: string;
+  name: string;
+  decimals: number;
+  logoURI?: string;
+  liquidity: number;
+  volume24hUSD: number;
+  priceChange24h: number;
+  price: number;
+  mc?: number;
+}
+
+export interface BirdeyeTrade {
+  txHash: string;
+  blockTime: number;
+  source: string;
+  side: 'buy' | 'sell';
+  tokenAddress: string;
+  amount: number;
+  priceUsd: number;
+  volumeUsd: number;
+}
+
+export interface BirdeyeSecurityInfo {
+  isToken2022: boolean;
+  freezeAuthority: string | null;
+  mintAuthority: string | null;
+  isProxy: boolean;
+  creatorAddress: string;
+  creationTime: number;
+}
+
+/**
+ * Individual token price data from multi_price endpoint
+ */
+export interface BirdeyeTokenPrice {
+  price: number;
+  priceChange24h: number;
+  liquidity: number;
+  volume24hUSD: number;
+}
+
+/**
+ * Response shape from /defi/multi_price endpoint
+ * Maps token address to price data (null if not found)
+ */
+export interface BirdeyeMultiPriceResponse {
+  success: boolean;
+  data: Record<string, {
+    value: number;
+    updateUnixTime: number;
+    updateHumanTime: string;
+    priceChange24h?: number;
+    liquidity?: number;
+    volume24hUSD?: number;
+  } | null>;
+}
