@@ -9,12 +9,12 @@
 ## Current Position
 
 **Phase:** 1 of 3 - Core Data Pipeline
-**Plan:** 1 of 8 complete
+**Plan:** 2 of 8 complete
 **Status:** In progress
 
 **Progress:**
 ```
-Phase 1: [#-------] Core Data Pipeline (1/8 plans)
+Phase 1: [##------] Core Data Pipeline (2/8 plans)
 Phase 2: [        ] Whale Detection
 Phase 3: [        ] Token Discovery
 ```
@@ -24,7 +24,7 @@ Phase 3: [        ] Token Discovery
 | Metric | Value |
 |--------|-------|
 | Phases completed | 0/3 |
-| Plans completed | 1/? |
+| Plans completed | 2/? |
 | Requirements delivered | 0/15 |
 
 ## Accumulated Context
@@ -38,6 +38,7 @@ Phase 3: [        ] Token Discovery
 | 11 chains support | Include all Birdeye-supported chains including sui, aptos, zksync | 2026-01-22 |
 | Account-level rate limiting | BIRDEYE_ACCOUNT config for shared quota across all endpoints | 2026-01-22 |
 | Composite index (chain, address) | Multi-chain token deduplication via composite unique index | 2026-01-22 |
+| 15min base TTL with 30min stale | Dynamic caching based on rate limit headroom percentage | 2026-01-22 |
 
 ### Technical Todos
 
@@ -52,12 +53,12 @@ Phase 3: [        ] Token Discovery
 | Topic | Phase | Status |
 |-------|-------|--------|
 | Symbol collision handling | Phase 1 | Pending |
-| Token registry seeding | Phase 1 | Pending |
+| Token registry seeding | Phase 1 | Resolved (01-02) |
 
 ## Session Continuity
 
 **Last session:** 2026-01-22
-**Stopped at:** Completed 01-01-PLAN.md
+**Stopped at:** Completed 01-02-PLAN.md
 **Resume file:** None
 
 ---
