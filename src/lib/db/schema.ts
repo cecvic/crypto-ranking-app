@@ -210,6 +210,68 @@ export const alertHistoryRelations = relations(alertHistory, ({ one }) => ({
   }),
 }));
 
+// ============================================
+// OPPORTUNITY RADAR TABLES
+// ============================================
+
+export const opportunityEvents = pgTable('opportunity_events', {
+  id: serial('id').primaryKey(),
+
+  tokenAddress: text('token_address').notNull(),
+  tokenSymbol: text('token_symbol'),
+  chain: text('chain').notNull().default('solana'),
+  pairAddress: text('pair_address'),
+  pairCreatedAt: timestamp('pair_created_at', { withTimezone: true }),
+
+  liquidity: decimal('liquidity', { precision: 20, scale: 2 }),
+  volume5m: decimal('volume_5m', { precision: 20, scale: 2 }),
+  volume1h: decimal('volume_1h', { precision: 20, scale: 2 }),
+  volumeAcceleration: decimal('volume_acceleration', { precision: 10, scale: 4 }),
+  priceChange1h: decimal('price_change_1h', { precision: 10, scale: 4 }),
+
+  whaleConfirmed: boolean('whale_confirmed').default(false),
+  compositeScore: decimal('composite_score', { precision: 5, scale: 2 }).notNull(),
+  rawData: jsonb('raw_data'),
+
+  detectedAt: timestamp('detected_at', { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+}, (table) => [
+  uniqueIndex('idx_opportunity_token_unique').on(table.tokenAddress, table.chain),
+  index('idx_opportunity_chain_detected').on(table.chain, table.detectedAt),
+  index('idx_opportunity_score').on(table.compositeScore),
+  index('idx_opportunity_expires').on(table.expiresAt),
+]);
+
+// ============================================
+// BIRDEYE MULTI-CHAIN TOKEN REGISTRY
+// ============================================
+
+// Multi-chain token data from Birdeye API
+export const birdeyeTokens = pgTable('birdeye_tokens', {
+  id: serial('id').primaryKey(),
+  address: text('address').notNull(),
+  chain: text('chain').notNull(),
+  symbol: text('symbol').notNull(),
+  name: text('name').notNull(),
+  decimals: integer('decimals'),
+  logoUri: text('logo_uri'),
+
+  // Denormalized price data for fast reads
+  price: decimal('price', { precision: 20, scale: 8 }),
+  priceChange24h: decimal('price_change_24h', { precision: 10, scale: 4 }),
+  volume24h: decimal('volume_24h', { precision: 20, scale: 2 }),
+  liquidity: decimal('liquidity', { precision: 20, scale: 2 }),
+  marketCap: bigint('market_cap', { mode: 'number' }),
+
+  lastFetchedAt: timestamp('last_fetched_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+}, (table) => [
+  uniqueIndex('idx_birdeye_tokens_chain_address').on(table.chain, table.address),
+  index('idx_birdeye_tokens_chain_volume').on(table.chain, table.volume24h),
+  index('idx_birdeye_tokens_chain_marketcap').on(table.chain, table.marketCap),
+]);
+
 // TypeScript types inferred from schema
 export type RankingSnapshot = typeof rankingSnapshots.$inferSelect;
 export type NewRankingSnapshot = typeof rankingSnapshots.$inferInsert;
@@ -231,3 +293,11 @@ export type AlertSubscription = typeof alertSubscriptions.$inferSelect;
 export type NewAlertSubscription = typeof alertSubscriptions.$inferInsert;
 export type AlertHistoryRow = typeof alertHistory.$inferSelect;
 export type NewAlertHistoryRow = typeof alertHistory.$inferInsert;
+
+// Opportunity radar types
+export type OpportunityEvent = typeof opportunityEvents.$inferSelect;
+export type NewOpportunityEvent = typeof opportunityEvents.$inferInsert;
+
+// Birdeye token registry types
+export type BirdeyeTokenRow = typeof birdeyeTokens.$inferSelect;
+export type NewBirdeyeTokenRow = typeof birdeyeTokens.$inferInsert;

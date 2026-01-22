@@ -48,6 +48,25 @@ export const RATE_LIMITS = {
     limit: 10,      // 10 per minute
     window: 60,
   },
+  // DEPRECATED: Use BIRDEYE_ACCOUNT for new code. This key is retained for backward
+  // compatibility with existing code that may reference it.
+  BIRDEYE: {
+    key: 'ratelimit:birdeye',
+    limit: 100,     // 100 per minute (free tier)
+    window: 60,
+  },
+  // Account-level Birdeye rate limit - ALL Birdeye API calls (price, trending,
+  // security, trades, multi_price) consume from this shared pool
+  BIRDEYE_ACCOUNT: {
+    key: 'ratelimit:birdeye:account',
+    limit: 100,     // Account-level: 100 requests per minute (free tier)
+    window: 60,
+  },
+  DEXSCREENER: {
+    key: 'ratelimit:dexscreener',
+    limit: 300,     // 300 per minute
+    window: 60,
+  },
 } as const;
 
 /**
