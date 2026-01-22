@@ -9,14 +9,14 @@
 ## Current Position
 
 **Phase:** 1 of 3 - Core Data Pipeline
-**Plan:** Not started
-**Status:** Planning
+**Plan:** 1 of 8 complete
+**Status:** In progress
 
 **Progress:**
 ```
-Phase 1: [ ] Core Data Pipeline
-Phase 2: [ ] Whale Detection
-Phase 3: [ ] Token Discovery
+Phase 1: [#-------] Core Data Pipeline (1/8 plans)
+Phase 2: [        ] Whale Detection
+Phase 3: [        ] Token Discovery
 ```
 
 ## Performance Metrics
@@ -24,7 +24,7 @@ Phase 3: [ ] Token Discovery
 | Metric | Value |
 |--------|-------|
 | Phases completed | 0/3 |
-| Plans completed | 0/? |
+| Plans completed | 1/? |
 | Requirements delivered | 0/15 |
 
 ## Accumulated Context
@@ -35,6 +35,9 @@ Phase 3: [ ] Token Discovery
 |----------|-----------|------|
 | 3 phases (quick depth) | DATA+CHAIN naturally coupled; WHALE and DISC are distinct feature slices | 2026-01-21 |
 | Polling-based (no WebSocket) | WebSocket requires Business tier ($499/mo), defer to v2 | 2026-01-21 |
+| 11 chains support | Include all Birdeye-supported chains including sui, aptos, zksync | 2026-01-22 |
+| Account-level rate limiting | BIRDEYE_ACCOUNT config for shared quota across all endpoints | 2026-01-22 |
+| Composite index (chain, address) | Multi-chain token deduplication via composite unique index | 2026-01-22 |
 
 ### Technical Todos
 
@@ -53,10 +56,10 @@ Phase 3: [ ] Token Discovery
 
 ## Session Continuity
 
-**Last Action:** Roadmap created
-**Next Action:** Plan Phase 1 with `/gsd:plan-phase 1`
-**Context to Preserve:** Research summary indicates rate limiting is critical; account-level limits shared across all endpoints
+**Last session:** 2026-01-22
+**Stopped at:** Completed 01-01-PLAN.md
+**Resume file:** None
 
 ---
 *State initialized: 2026-01-21*
-*Last updated: 2026-01-21*
+*Last updated: 2026-01-22*
