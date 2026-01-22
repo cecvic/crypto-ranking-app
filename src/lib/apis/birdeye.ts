@@ -9,10 +9,15 @@ const api = axios.create({
   timeout: 30000,
   headers: {
     'Accept': 'application/json',
-    ...(process.env.BIRDEYE_API_KEY && {
-      'X-API-KEY': process.env.BIRDEYE_API_KEY,
-    }),
   },
+});
+
+// Add API key dynamically per-request (env vars may not be available at module load time)
+api.interceptors.request.use((config) => {
+  if (process.env.BIRDEYE_API_KEY) {
+    config.headers['X-API-KEY'] = process.env.BIRDEYE_API_KEY;
+  }
+  return config;
 });
 
 axiosRetry(api, {
@@ -283,7 +288,7 @@ export async function getMultiPrice(
 export async function getTokenList(
   chain: BirdeyeChain,
   limit: number = 50,
-  sortBy: 'mc' | 'v24hUSD' = 'mc'
+  sortBy: 'mc' | 'v24hUSD' = 'v24hUSD' // Default to volume - mc returns spam tokens with fake values
 ): Promise<BirdeyeToken[]> {
   try {
     console.log(`[Birdeye] Fetching token list on ${chain} sorted by ${sortBy}...`);

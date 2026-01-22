@@ -19,7 +19,7 @@ export async function seedTokensFromBirdeye(
     throw new Error(`Rate limited. Reset at ${new Date(rateCheck.resetAt).toISOString()}`);
   }
 
-  const tokens = await getTokenList(chain, limit, 'mc');
+  const tokens = await getTokenList(chain, limit, 'v24hUSD'); // Sort by volume for legitimate tokens
 
   let added = 0;
   let updated = 0;
