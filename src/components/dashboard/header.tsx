@@ -16,6 +16,7 @@ import {
   BellIcon,
   MenuIcon,
   BotIcon,
+  CoinsIcon,
 } from 'lucide-react';
 
 export function DashboardHeader() {
@@ -67,6 +68,12 @@ export function DashboardHeader() {
             className="text-foreground/60 hover:text-foreground transition-colors"
           >
             Whale Alerts
+          </Link>
+          <Link
+            href="/dashboard/tokens"
+            className="text-foreground/60 hover:text-foreground transition-colors"
+          >
+            Tokens
           </Link>
         </nav>
 
@@ -138,6 +145,12 @@ export function DashboardHeader() {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/dashboard/whale-alerts">Whale Alerts</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/tokens">
+                  <CoinsIcon className="mr-2 h-4 w-4" />
+                  Tokens
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
