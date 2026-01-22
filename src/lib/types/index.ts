@@ -419,3 +419,31 @@ export interface BirdeyeMultiPriceResponse {
     volume24hUSD?: number;
   } | null>;
 }
+
+/**
+ * Birdeye token response from /api/tokens
+ */
+export interface BirdeyeTokenResponse {
+  address: string;
+  chain: string;
+  symbol: string;
+  name: string;
+  logoUri: string | null;
+  price: number | null;
+  priceChange24h: number | null;
+  volume24h: number | null;
+  liquidity: number | null;
+  marketCap: number | null;
+  lastFetchedAt: string | null;
+}
+
+/**
+ * API response wrapper for token endpoints
+ */
+export interface BirdeyeTokensAPIResponse {
+  data: BirdeyeTokenResponse[];
+  cached: boolean;
+  chain: string;
+  count: number;
+  timestamp: string;
+}
