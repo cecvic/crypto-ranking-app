@@ -1,6 +1,6 @@
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
-import { BirdeyeToken, BirdeyeTrade, BirdeyeSecurityInfo } from '../types';
+import { BirdeyeToken, BirdeyeTrade, BirdeyeSecurityInfo, BirdeyeWhaleTrade } from '../types';
 
 const BASE_URL = 'https://public-api.birdeye.so';
 
@@ -412,6 +412,88 @@ export async function checkHealth(): Promise<boolean> {
   }
 }
 
+// Response type for /defi/v3/trades/token-by-volume endpoint
+interface BirdeyeWhaleTradesResponse {
+  success: boolean;
+  data: {
+    items: Array<{
+      txHash: string;
+      blockUnixTime: number;
+      source: string;
+      side: 'buy' | 'sell';
+      address: string;
+      amount: number;
+      priceUsd: number;
+      volumeUsd: number;
+    }>;
+  };
+}
+
+/**
+ * Fetch large trades (whale activity) for a token from Birdeye
+ * Uses /defi/v3/trades/token-by-volume endpoint with volume filtering
+ *
+ * @param chain - Target chain (solana, ethereum, etc.)
+ * @param tokenAddress - Token contract address
+ * @param minVolumeUsd - Minimum trade volume in USD (default $100k)
+ * @param timeFrom - Optional Unix timestamp for start of range
+ * @param timeTo - Optional Unix timestamp for end of range
+ * @returns Array of whale trades (BirdeyeWhaleTrade[]), empty array on error
+ */
+export async function getWhaleTrades(
+  chain: BirdeyeChain,
+  tokenAddress: string,
+  minVolumeUsd: number = 100000,
+  timeFrom?: number,
+  timeTo?: number
+): Promise<BirdeyeWhaleTrade[]> {
+  try {
+    console.log(`[Birdeye] Fetching whale trades for ${tokenAddress} on ${chain} (min $${minVolumeUsd})`);
+
+    const params: Record<string, unknown> = {
+      address: tokenAddress,
+      min_volume: minVolumeUsd,
+      volume_type: 'usd',
+      limit: 500, // Max per API docs
+    };
+
+    if (timeFrom) params.time_from = timeFrom;
+    if (timeTo) params.time_to = timeTo;
+
+    const response = await api.get<BirdeyeWhaleTradesResponse>(
+      '/defi/v3/trades/token-by-volume',
+      {
+        params,
+        headers: {
+          'x-chain': chain,
+        },
+      }
+    );
+
+    if (!response.data?.success || !response.data?.data?.items) {
+      console.log(`[Birdeye] No whale trade data for ${tokenAddress}`);
+      return [];
+    }
+
+    const trades: BirdeyeWhaleTrade[] = response.data.data.items.map((t) => ({
+      txHash: t.txHash,
+      blockTime: t.blockUnixTime,
+      source: t.source,
+      side: t.side,
+      tokenAddress: t.address,
+      amount: t.amount,
+      priceUsd: t.priceUsd,
+      volumeUsd: t.volumeUsd,
+    }));
+
+    console.log(`[Birdeye] Found ${trades.length} whale trades for ${tokenAddress}`);
+    return trades;
+  } catch (error) {
+    console.error(`[Birdeye] Error fetching whale trades for ${tokenAddress}:`, error);
+    return [];
+  }
+}
+
 /**
  * Get detailed token overview with activity metrics
  * @param address - Token address
@@ -491,6 +573,45 @@ export async function searchTokens(
     console.error(`[Birdeye] Error searching tokens for "${keyword}" on ${chain}:`, error);
     return [];
   }
+}
+
+/**
+ * Aggregate whale trades into metrics for scoring
+ * @param trades - Array of BirdeyeWhaleTrade objects
+ * @returns Aggregated metrics for 24h period
+ */
+export function aggregateWhaleTrades(trades: BirdeyeWhaleTrade[]): {
+  buyVolume24h: number;
+  sellVolume24h: number;
+  buyCount24h: number;
+  sellCount24h: number;
+  netFlow24h: number;
+  largestTrade24h: number;
+} {
+  const metrics = {
+    buyVolume24h: 0,
+    sellVolume24h: 0,
+    buyCount24h: 0,
+    sellCount24h: 0,
+    netFlow24h: 0,
+    largestTrade24h: 0,
+  };
+
+  for (const trade of trades) {
+    if (trade.side === 'buy') {
+      metrics.buyVolume24h += trade.volumeUsd;
+      metrics.buyCount24h++;
+    } else {
+      metrics.sellVolume24h += trade.volumeUsd;
+      metrics.sellCount24h++;
+    }
+
+    metrics.largestTrade24h = Math.max(metrics.largestTrade24h, trade.volumeUsd);
+  }
+
+  metrics.netFlow24h = metrics.buyVolume24h - metrics.sellVolume24h;
+
+  return metrics;
 }
 
 // Helper to delay between API calls

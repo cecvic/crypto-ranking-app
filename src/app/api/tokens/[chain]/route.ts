@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { getCached, setCached, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/redis';
 import { getTokensByChain } from '@/lib/db/birdeye-queries';
+import { getWhaleMetricsByChain } from '@/lib/db/birdeye-whale-queries';
 import { BIRDEYE_CHAINS, BirdeyeChain } from '@/lib/apis/birdeye';
 import { BirdeyeTokenRow } from '@/lib/db/schema';
 
@@ -20,9 +21,14 @@ interface TokenResponse {
   liquidity: number | null;
   marketCap: number | null;
   lastFetchedAt: string | null;
+  // Whale metrics
+  whaleScore: number | null;
+  netFlow24h: number | null;
+  buyVolume24h: number | null;
+  sellVolume24h: number | null;
 }
 
-function formatToken(row: BirdeyeTokenRow): TokenResponse {
+function formatToken(row: BirdeyeTokenRow): Omit<TokenResponse, 'whaleScore' | 'netFlow24h' | 'buyVolume24h' | 'sellVolume24h'> {
   return {
     address: row.address,
     chain: row.chain,
@@ -86,16 +92,35 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
     // Fetch from database
     const tokens = await getTokensByChain(chain as BirdeyeChain, limit, sortBy);
-    const formattedTokens = tokens.map(formatToken);
+
+    // Fetch whale metrics for this chain and merge
+    const whaleMetrics = await getWhaleMetricsByChain(chain, limit);
+    const whaleMetricsMap = new Map(
+      whaleMetrics.map((m) => [m.tokenAddress, m])
+    );
+
+    // Merge whale metrics into token response
+    const tokensWithWhale: TokenResponse[] = tokens.map((token) => {
+      const formatted = formatToken(token);
+      const whale = whaleMetricsMap.get(token.address);
+
+      return {
+        ...formatted,
+        whaleScore: whale?.whaleScore ?? null,
+        netFlow24h: whale?.netFlow24h ? parseFloat(whale.netFlow24h) : null,
+        buyVolume24h: whale?.buyVolume24h ? parseFloat(whale.buyVolume24h) : null,
+        sellVolume24h: whale?.sellVolume24h ? parseFloat(whale.sellVolume24h) : null,
+      };
+    });
 
     // Cache result
-    await setCached(cacheKey, formattedTokens, CACHE_TTL.BIRDEYE_PRICES);
+    await setCached(cacheKey, tokensWithWhale, CACHE_TTL.BIRDEYE_PRICES);
 
     return NextResponse.json({
-      data: formattedTokens,
+      data: tokensWithWhale,
       cached: false,
       chain,
-      count: formattedTokens.length,
+      count: tokensWithWhale.length,
       timestamp: new Date().toISOString(),
     });
 

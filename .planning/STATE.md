@@ -16,7 +16,7 @@
 **Progress:**
 ```
 Phase 1: [########] Core Data Pipeline (8/8 plans) ✓
-Phase 2: [        ] Whale Detection
+Phase 2: [######] Whale Detection (3/3 plans) ✓
 Phase 3: [        ] Token Discovery
 Phase 4: [########] Activity Rankings & Search (4/4 plans) ✓
 ```
@@ -25,9 +25,9 @@ Phase 4: [########] Activity Rankings & Search (4/4 plans) ✓
 
 | Metric | Value |
 |--------|-------|
-| Phases completed | 2/4 |
-| Plans completed | 12 |
-| Requirements delivered | 13/20 |
+| Phases completed | 3/4 |
+| Plans completed | 15 |
+| Requirements delivered | 16/20 |
 
 ## Accumulated Context
 
@@ -48,6 +48,13 @@ Phase 4: [########] Activity Rankings & Search (4/4 plans) ✓
 | React.ReactElement over JSX.Element | React 19 compatibility for component return types | 2026-01-22 |
 | 50 tokens per chain | Birdeye API enforces max 50 per request (not 150 as planned) | 2026-01-22 |
 | Request interceptor for API key | Env vars not available at module load time in Next.js | 2026-01-22 |
+| $100k whale threshold | Default minimum volume for whale trade detection | 2026-01-27 |
+| Separate BirdeyeWhaleTrade type | Distinct type for whale trades vs regular trades for clarity | 2026-01-27 |
+| 3-factor whale scoring | Net flow (+/-25pts), transaction count (+15/-5pts), accumulation ratio (+/-10pts) | 2026-01-27 |
+| 20% rate limit headroom for whale cron | Lower priority than price polling (10%), skips if headroom low | 2026-01-27 |
+| 20 tokens per chain whale polling | Reduced from 100 due to heavier whale API calls | 2026-01-27 |
+| Green=accumulation, red=distribution | Whale buys indicate bullish, whale sells bearish | 2026-01-27 |
+| $10k neutral threshold | Net flow below $10k considered neutral to avoid noise | 2026-01-27 |
 | Percentile weights 30/25/25/20 | Volume, trade, wallet, momentum balance for activity score | 2026-01-27 |
 | Risk multipliers for low liquidity | 0.5x/<$10k, 0.75x/<$50k, 0.9x/<$100k penalizes risky tokens | 2026-01-27 |
 | Healthy ratio bonus +15 | Volume/liquidity 0.5-2.0 indicates sustainable trading | 2026-01-27 |

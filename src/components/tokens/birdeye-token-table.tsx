@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useBirdeyeTokens } from '@/hooks/use-birdeye-tokens';
 import { useActivityRankings, ActivityRankedToken } from '@/hooks/use-activity-rankings';
 import { ChainSelector } from './chain-selector';
@@ -23,14 +23,58 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
+import { ArrowUpIcon, ArrowDownIcon, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { WhaleIndicator } from './whale-indicator';
+
+type SortKey = 'symbol' | 'chain' | 'price' | 'priceChange24h' | 'volume24h' | 'whaleScore' | 'marketCap';
+type SortDirection = 'asc' | 'desc';
 
 type SortBy = 'activityScore' | 'opportunityScore' | 'marketCap' | 'volume24h';
 
 interface BirdeyeTokenTableProps {
   initialChain?: string;
   limit?: number;
+}
+
+interface SortableHeaderProps {
+  children: React.ReactNode;
+  sortKey: SortKey;
+  currentSortKey: SortKey;
+  sortDirection: SortDirection;
+  onSort: (key: SortKey) => void;
+  className?: string;
+}
+
+function SortableHeader({
+  children,
+  sortKey,
+  currentSortKey,
+  sortDirection,
+  onSort,
+  className,
+}: SortableHeaderProps) {
+  const isActive = sortKey === currentSortKey;
+
+  return (
+    <TableHead
+      className={cn('cursor-pointer select-none hover:bg-muted/50 transition-colors', className)}
+      onClick={() => onSort(sortKey)}
+    >
+      <div className={cn('flex items-center gap-1', className?.includes('text-right') && 'justify-end')}>
+        {children}
+        {isActive ? (
+          sortDirection === 'asc' ? (
+            <ArrowUpIcon className="h-4 w-4" />
+          ) : (
+            <ArrowDownIcon className="h-4 w-4" />
+          )
+        ) : (
+          <ChevronsUpDown className="h-4 w-4 text-muted-foreground/50" />
+        )}
+      </div>
+    </TableHead>
+  );
 }
 
 function formatPrice(price: number | null): string {
@@ -77,6 +121,10 @@ interface DisplayToken {
   priceChange24h: number | null;
   volume24h: number | null;
   marketCap: number | null;
+  whaleScore?: number | null;
+  netFlow24h?: number | null;
+  buyVolume24h?: number | null;
+  sellVolume24h?: number | null;
   activityScore?: number | null;
   opportunityScore?: number | null;
   trade24h?: number | null;
@@ -130,6 +178,14 @@ function TokenRow({ token, showActivityScores }: TokenRowProps) {
       <TableCell className="text-right font-mono">
         {formatVolume(token.volume24h)}
       </TableCell>
+      <TableCell>
+        <WhaleIndicator
+          whaleScore={token.whaleScore}
+          netFlow={token.netFlow24h}
+          buyVolume={token.buyVolume24h}
+          sellVolume={token.sellVolume24h}
+        />
+      </TableCell>
       <TableCell className="text-right font-mono">
         {formatVolume(token.marketCap)}
       </TableCell>
@@ -160,7 +216,6 @@ interface LoadingSkeletonProps {
 }
 
 function LoadingSkeleton({ showActivityScores }: LoadingSkeletonProps) {
-  const colCount = showActivityScores ? 8 : 6;
   return (
     <>
       {[...Array(10)].map((_, i) => (
@@ -178,6 +233,7 @@ function LoadingSkeleton({ showActivityScores }: LoadingSkeletonProps) {
           <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
           <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
           <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+          <TableCell><Skeleton className="h-6 w-12" /></TableCell>
           <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
           {showActivityScores && (
             <>
@@ -202,6 +258,8 @@ export function BirdeyeTokenTable({ initialChain, limit = 100 }: BirdeyeTokenTab
   const [chain, setChain] = useState<string | undefined>(initialChain);
   // Default to activity score sorting (RANK-01 requirement)
   const [sortBy, setSortBy] = useState<SortBy>('activityScore');
+  const [sortKey, setSortKey] = useState<SortKey>('marketCap');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   // Use activity rankings for activity/opportunity sorts
   const useActivityData = sortBy === 'activityScore' || sortBy === 'opportunityScore';
@@ -223,6 +281,17 @@ export function BirdeyeTokenTable({ initialChain, limit = 100 }: BirdeyeTokenTab
   const activeQuery = useActivityData ? activityQuery : birdeyeQuery;
   const { data, isLoading, error, isFetching } = activeQuery;
 
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      // Toggle direction if same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to desc (highest first)
+      setSortKey(key);
+      setSortDirection('desc');
+    }
+  };
+
   // Convert data to unified display format
   const displayTokens: DisplayToken[] = (data?.data || []).map((token) => ({
     address: token.address,
@@ -234,6 +303,10 @@ export function BirdeyeTokenTable({ initialChain, limit = 100 }: BirdeyeTokenTab
     priceChange24h: token.priceChange24h,
     volume24h: token.volume24h,
     marketCap: token.marketCap,
+    whaleScore: (token as { whaleScore?: number | null }).whaleScore ?? null,
+    netFlow24h: (token as { netFlow24h?: number | null }).netFlow24h ?? null,
+    buyVolume24h: (token as { buyVolume24h?: number | null }).buyVolume24h ?? null,
+    sellVolume24h: (token as { sellVolume24h?: number | null }).sellVolume24h ?? null,
     activityScore: useActivityData ? (token as ActivityRankedToken).activityScore : undefined,
     opportunityScore: useActivityData ? (token as ActivityRankedToken).opportunityScore : undefined,
     trade24h: useActivityData ? (token as ActivityRankedToken).trade24h : undefined,
@@ -300,6 +373,7 @@ export function BirdeyeTokenTable({ initialChain, limit = 100 }: BirdeyeTokenTab
               <TableHead className="text-right">Price</TableHead>
               <TableHead className="text-right">24h Change</TableHead>
               <TableHead className="text-right">Volume (24h)</TableHead>
+              <TableHead>Whale</TableHead>
               <TableHead className="text-right">Market Cap</TableHead>
               {useActivityData && (
                 <>
@@ -314,7 +388,7 @@ export function BirdeyeTokenTable({ initialChain, limit = 100 }: BirdeyeTokenTab
               <LoadingSkeleton showActivityScores={useActivityData} />
             ) : sortedTokens.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={useActivityData ? 8 : 6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={useActivityData ? 9 : 7} className="text-center py-8 text-muted-foreground">
                   No tokens found. Try a different chain or check back later.
                 </TableCell>
               </TableRow>
