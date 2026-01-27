@@ -9,14 +9,14 @@
 ## Current Position
 
 **Phase:** 2 of 3 - Whale Detection
-**Plan:** 1 of 3 complete
-**Status:** In progress
-**Last activity:** 2026-01-27 - Completed 02-01-PLAN.md
+**Plan:** 3 of 3 complete
+**Status:** Phase complete
+**Last activity:** 2026-01-27 - Completed 02-03-PLAN.md
 
 **Progress:**
 ```
 Phase 1: [########] Core Data Pipeline (8/8 plans) ✓
-Phase 2: [##      ] Whale Detection (1/3 plans)
+Phase 2: [######] Whale Detection (3/3 plans) ✓
 Phase 3: [        ] Token Discovery
 ```
 
@@ -25,7 +25,7 @@ Phase 3: [        ] Token Discovery
 | Metric | Value |
 |--------|-------|
 | Phases completed | 1/3 |
-| Plans completed | 9/11 |
+| Plans completed | 10/11 |
 | Requirements delivered | 10/15 |
 
 ## Accumulated Context
@@ -49,6 +49,9 @@ Phase 3: [        ] Token Discovery
 | Request interceptor for API key | Env vars not available at module load time in Next.js | 2026-01-22 |
 | $100k whale threshold | Default minimum volume for whale trade detection | 2026-01-27 |
 | Separate BirdeyeWhaleTrade type | Distinct type for whale trades vs regular trades for clarity | 2026-01-27 |
+| 3-factor whale scoring | Net flow (+/-25pts), transaction count (+15/-5pts), accumulation ratio (+/-10pts) | 2026-01-27 |
+| 20% rate limit headroom for whale cron | Lower priority than price polling (10%), skips if headroom low | 2026-01-27 |
+| 20 tokens per chain whale polling | Reduced from 100 due to heavier whale API calls | 2026-01-27 |
 
 ### Technical Todos
 
@@ -68,7 +71,7 @@ Phase 3: [        ] Token Discovery
 ## Session Continuity
 
 **Last session:** 2026-01-27
-**Stopped at:** Completed 02-01-PLAN.md (Whale Data Foundation)
+**Stopped at:** Completed 02-02-PLAN.md (Whale Trade Polling)
 **Resume file:** None
 
 ---
