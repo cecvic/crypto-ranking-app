@@ -9,15 +9,16 @@
 ## Current Position
 
 **Phase:** 4 of 4 - Activity Rankings & Search
-**Plan:** 2 of 4 complete
+**Plan:** 3 of 4 complete
 **Status:** In progress
+**Last activity:** 2026-01-27 - Completed 04-03-PLAN.md
 
 **Progress:**
 ```
 Phase 1: [########] Core Data Pipeline (8/8 plans) ✓
 Phase 2: [        ] Whale Detection
 Phase 3: [        ] Token Discovery
-Phase 4: [##      ] Activity Rankings & Search (2/4 plans)
+Phase 4: [###     ] Activity Rankings & Search (3/4 plans)
 ```
 
 ## Performance Metrics
@@ -25,7 +26,7 @@ Phase 4: [##      ] Activity Rankings & Search (2/4 plans)
 | Metric | Value |
 |--------|-------|
 | Phases completed | 1/4 |
-| Plans completed | 10 |
+| Plans completed | 11 |
 | Requirements delivered | 11/20 |
 
 ## Accumulated Context
@@ -50,6 +51,9 @@ Phase 4: [##      ] Activity Rankings & Search (2/4 plans)
 | Percentile weights 30/25/25/20 | Volume, trade, wallet, momentum balance for activity score | 2026-01-27 |
 | Risk multipliers for low liquidity | 0.5x/<$10k, 0.75x/<$50k, 0.9x/<$100k penalizes risky tokens | 2026-01-27 |
 | Healthy ratio bonus +15 | Volume/liquidity 0.5-2.0 indicates sustainable trading | 2026-01-27 |
+| 50 tokens per chain for activity | Match Birdeye API max per request, ~550 tokens total | 2026-01-27 |
+| 2 minute cache TTL for activity API | Balance freshness with load reduction | 2026-01-27 |
+| Binary search for percentile rank | TypeScript type issue with simple-statistics | 2026-01-27 |
 
 ### Technical Todos
 
@@ -73,7 +77,7 @@ Phase 4: [##      ] Activity Rankings & Search (2/4 plans)
 ## Session Continuity
 
 **Last session:** 2026-01-27
-**Stopped at:** Completed 04-01-PLAN.md (Scoring Libraries & Schema Extension)
+**Stopped at:** Completed 04-03-PLAN.md (Activity Data Pipeline & API)
 **Resume file:** None
 
 ---
