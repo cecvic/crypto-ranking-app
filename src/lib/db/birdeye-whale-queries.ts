@@ -85,55 +85,77 @@ export async function batchUpsertWhaleMetrics(
 
 /**
  * Get whale metrics for a specific token
+ * Returns null if table doesn't exist (migration not applied)
  */
 export async function getWhaleMetrics(
   chain: string,
   tokenAddress: string
 ): Promise<WhaleMetricsBirdeyeRow | null> {
-  const [metrics] = await getDb()
-    .select()
-    .from(whaleMetricsBirdeye)
-    .where(
-      and(
-        eq(whaleMetricsBirdeye.chain, chain),
-        eq(whaleMetricsBirdeye.tokenAddress, tokenAddress)
+  try {
+    const [metrics] = await getDb()
+      .select()
+      .from(whaleMetricsBirdeye)
+      .where(
+        and(
+          eq(whaleMetricsBirdeye.chain, chain),
+          eq(whaleMetricsBirdeye.tokenAddress, tokenAddress)
+        )
       )
-    )
-    .limit(1);
+      .limit(1);
 
-  return metrics || null;
+    return metrics || null;
+  } catch (error) {
+    // Table may not exist if migration not applied
+    console.warn('[whale-queries] getWhaleMetrics failed, table may not exist');
+    return null;
+  }
 }
 
 /**
  * Get whale metrics for a specific chain
+ * Returns empty array if table doesn't exist (migration not applied)
  */
 export async function getWhaleMetricsByChain(
   chain: string,
   limit: number = 100
 ): Promise<WhaleMetricsBirdeyeRow[]> {
-  return getDb()
-    .select()
-    .from(whaleMetricsBirdeye)
-    .where(eq(whaleMetricsBirdeye.chain, chain))
-    .orderBy(desc(whaleMetricsBirdeye.lastUpdatedAt))
-    .limit(limit);
+  try {
+    return await getDb()
+      .select()
+      .from(whaleMetricsBirdeye)
+      .where(eq(whaleMetricsBirdeye.chain, chain))
+      .orderBy(desc(whaleMetricsBirdeye.lastUpdatedAt))
+      .limit(limit);
+  } catch (error) {
+    // Table may not exist if migration not applied
+    console.warn('[whale-queries] getWhaleMetricsByChain failed, table may not exist');
+    return [];
+  }
 }
 
 /**
  * Get all whale metrics across all chains
+ * Returns empty array if table doesn't exist (migration not applied)
  */
 export async function getAllWhaleMetrics(
   limit: number = 500
 ): Promise<WhaleMetricsBirdeyeRow[]> {
-  return getDb()
-    .select()
-    .from(whaleMetricsBirdeye)
-    .orderBy(desc(whaleMetricsBirdeye.lastUpdatedAt))
-    .limit(limit);
+  try {
+    return await getDb()
+      .select()
+      .from(whaleMetricsBirdeye)
+      .orderBy(desc(whaleMetricsBirdeye.lastUpdatedAt))
+      .limit(limit);
+  } catch (error) {
+    // Table may not exist if migration not applied
+    console.warn('[whale-queries] getAllWhaleMetrics failed, table may not exist');
+    return [];
+  }
 }
 
 /**
  * Get whale metrics for multiple tokens (batch query)
+ * Returns empty map if table doesn't exist (migration not applied)
  */
 export async function getWhaleMetricsForTokens(
   chain: string,
@@ -143,15 +165,21 @@ export async function getWhaleMetricsForTokens(
     return new Map();
   }
 
-  const rows = await getDb()
-    .select()
-    .from(whaleMetricsBirdeye)
-    .where(
-      and(
-        eq(whaleMetricsBirdeye.chain, chain),
-        inArray(whaleMetricsBirdeye.tokenAddress, tokenAddresses)
-      )
-    );
+  try {
+    const rows = await getDb()
+      .select()
+      .from(whaleMetricsBirdeye)
+      .where(
+        and(
+          eq(whaleMetricsBirdeye.chain, chain),
+          inArray(whaleMetricsBirdeye.tokenAddress, tokenAddresses)
+        )
+      );
 
-  return new Map(rows.map((row) => [row.tokenAddress, row]));
+    return new Map(rows.map((row) => [row.tokenAddress, row]));
+  } catch (error) {
+    // Table may not exist if migration not applied
+    console.warn('[whale-queries] getWhaleMetricsForTokens failed, table may not exist');
+    return new Map();
+  }
 }
