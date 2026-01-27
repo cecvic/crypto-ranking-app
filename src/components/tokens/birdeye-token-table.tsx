@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useBirdeyeTokens } from '@/hooks/use-birdeye-tokens';
 import { ChainSelector } from './chain-selector';
 import { BirdeyeTokenResponse } from '@/lib/types';
@@ -13,12 +13,56 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
+import { ArrowUpIcon, ArrowDownIcon, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { WhaleIndicator } from './whale-indicator';
+
+type SortKey = 'symbol' | 'chain' | 'price' | 'priceChange24h' | 'volume24h' | 'whaleScore' | 'marketCap';
+type SortDirection = 'asc' | 'desc';
 
 interface BirdeyeTokenTableProps {
   initialChain?: string;
   limit?: number;
+}
+
+interface SortableHeaderProps {
+  children: React.ReactNode;
+  sortKey: SortKey;
+  currentSortKey: SortKey;
+  sortDirection: SortDirection;
+  onSort: (key: SortKey) => void;
+  className?: string;
+}
+
+function SortableHeader({
+  children,
+  sortKey,
+  currentSortKey,
+  sortDirection,
+  onSort,
+  className,
+}: SortableHeaderProps) {
+  const isActive = sortKey === currentSortKey;
+
+  return (
+    <TableHead
+      className={cn('cursor-pointer select-none hover:bg-muted/50 transition-colors', className)}
+      onClick={() => onSort(sortKey)}
+    >
+      <div className={cn('flex items-center gap-1', className?.includes('text-right') && 'justify-end')}>
+        {children}
+        {isActive ? (
+          sortDirection === 'asc' ? (
+            <ArrowUpIcon className="h-4 w-4" />
+          ) : (
+            <ArrowDownIcon className="h-4 w-4" />
+          )
+        ) : (
+          <ChevronsUpDown className="h-4 w-4 text-muted-foreground/50" />
+        )}
+      </div>
+    </TableHead>
+  );
 }
 
 function formatPrice(price: number | null): string {
@@ -95,6 +139,14 @@ function TokenRow({ token }: { token: BirdeyeTokenResponse }) {
       <TableCell className="text-right font-mono">
         {formatVolume(token.volume24h)}
       </TableCell>
+      <TableCell>
+        <WhaleIndicator
+          whaleScore={token.whaleScore}
+          netFlow={token.netFlow24h}
+          buyVolume={token.buyVolume24h}
+          sellVolume={token.sellVolume24h}
+        />
+      </TableCell>
       <TableCell className="text-right font-mono">
         {formatVolume(token.marketCap)}
       </TableCell>
@@ -120,6 +172,7 @@ function LoadingSkeleton() {
           <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
           <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
           <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+          <TableCell><Skeleton className="h-6 w-12" /></TableCell>
           <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
         </TableRow>
       ))}
@@ -129,12 +182,80 @@ function LoadingSkeleton() {
 
 export function BirdeyeTokenTable({ initialChain, limit = 100 }: BirdeyeTokenTableProps) {
   const [chain, setChain] = useState<string | undefined>(initialChain);
+  const [sortKey, setSortKey] = useState<SortKey>('marketCap');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const { data, isLoading, error, isFetching } = useBirdeyeTokens({
     chain,
     limit,
     sortBy: 'marketCap',
   });
+
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      // Toggle direction if same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to desc (highest first)
+      setSortKey(key);
+      setSortDirection('desc');
+    }
+  };
+
+  const sortedData = useMemo(() => {
+    if (!data?.data) return [];
+
+    return [...data.data].sort((a, b) => {
+      let aVal: number | string | null = null;
+      let bVal: number | string | null = null;
+
+      switch (sortKey) {
+        case 'symbol':
+          aVal = a.symbol.toLowerCase();
+          bVal = b.symbol.toLowerCase();
+          break;
+        case 'chain':
+          aVal = a.chain.toLowerCase();
+          bVal = b.chain.toLowerCase();
+          break;
+        case 'price':
+          aVal = a.price;
+          bVal = b.price;
+          break;
+        case 'priceChange24h':
+          aVal = a.priceChange24h;
+          bVal = b.priceChange24h;
+          break;
+        case 'volume24h':
+          aVal = a.volume24h;
+          bVal = b.volume24h;
+          break;
+        case 'whaleScore':
+          aVal = a.whaleScore;
+          bVal = b.whaleScore;
+          break;
+        case 'marketCap':
+          aVal = a.marketCap;
+          bVal = b.marketCap;
+          break;
+      }
+
+      // Handle nulls - always sort them to the end
+      if (aVal === null && bVal === null) return 0;
+      if (aVal === null) return 1;
+      if (bVal === null) return -1;
+
+      // Compare values
+      let comparison = 0;
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        comparison = aVal.localeCompare(bVal);
+      } else {
+        comparison = (aVal as number) - (bVal as number);
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [data?.data, sortKey, sortDirection]);
 
   return (
     <div className="space-y-4">
@@ -172,25 +293,80 @@ export function BirdeyeTokenTable({ initialChain, limit = 100 }: BirdeyeTokenTab
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[250px]">Token</TableHead>
-              <TableHead>Chain</TableHead>
-              <TableHead className="text-right">Price</TableHead>
-              <TableHead className="text-right">24h Change</TableHead>
-              <TableHead className="text-right">Volume (24h)</TableHead>
-              <TableHead className="text-right">Market Cap</TableHead>
+              <SortableHeader
+                sortKey="symbol"
+                currentSortKey={sortKey}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                className="w-[250px]"
+              >
+                Token
+              </SortableHeader>
+              <SortableHeader
+                sortKey="chain"
+                currentSortKey={sortKey}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+              >
+                Chain
+              </SortableHeader>
+              <SortableHeader
+                sortKey="price"
+                currentSortKey={sortKey}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                className="text-right"
+              >
+                Price
+              </SortableHeader>
+              <SortableHeader
+                sortKey="priceChange24h"
+                currentSortKey={sortKey}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                className="text-right"
+              >
+                24h Change
+              </SortableHeader>
+              <SortableHeader
+                sortKey="volume24h"
+                currentSortKey={sortKey}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                className="text-right"
+              >
+                Volume (24h)
+              </SortableHeader>
+              <SortableHeader
+                sortKey="whaleScore"
+                currentSortKey={sortKey}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+              >
+                Whale
+              </SortableHeader>
+              <SortableHeader
+                sortKey="marketCap"
+                currentSortKey={sortKey}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                className="text-right"
+              >
+                Market Cap
+              </SortableHeader>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <LoadingSkeleton />
-            ) : data?.data.length === 0 ? (
+            ) : sortedData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   No tokens found. Try a different chain or check back later.
                 </TableCell>
               </TableRow>
             ) : (
-              data?.data.map((token) => (
+              sortedData.map((token) => (
                 <TokenRow key={`${token.chain}-${token.address}`} token={token} />
               ))
             )}
