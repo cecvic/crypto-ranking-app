@@ -301,3 +301,36 @@ export type NewOpportunityEvent = typeof opportunityEvents.$inferInsert;
 // Birdeye token registry types
 export type BirdeyeTokenRow = typeof birdeyeTokens.$inferSelect;
 export type NewBirdeyeTokenRow = typeof birdeyeTokens.$inferInsert;
+
+// ============================================
+// BIRDEYE WHALE METRICS (DEX TRADES)
+// ============================================
+
+// Aggregated whale trade metrics from Birdeye API
+export const whaleMetricsBirdeye = pgTable('whale_metrics_birdeye', {
+  id: serial('id').primaryKey(),
+  chain: text('chain').notNull(),
+  tokenAddress: text('token_address').notNull(),
+
+  // 24h aggregated metrics (USD values)
+  buyVolume24h: decimal('buy_volume_24h', { precision: 20, scale: 2 }).default('0'),
+  sellVolume24h: decimal('sell_volume_24h', { precision: 20, scale: 2 }).default('0'),
+  buyCount24h: integer('buy_count_24h').default(0),
+  sellCount24h: integer('sell_count_24h').default(0),
+  netFlow24h: decimal('net_flow_24h', { precision: 20, scale: 2 }).default('0'),
+  largestTrade24h: decimal('largest_trade_24h', { precision: 20, scale: 2 }),
+
+  // Computed whale score (0-100)
+  whaleScore: integer('whale_score').default(50),
+
+  // Metadata
+  lastUpdatedAt: timestamp('last_updated_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+}, (table) => [
+  uniqueIndex('idx_whale_metrics_chain_address').on(table.chain, table.tokenAddress),
+  index('idx_whale_metrics_chain_updated').on(table.chain, table.lastUpdatedAt),
+]);
+
+// Type exports for whale metrics
+export type WhaleMetricsBirdeyeRow = typeof whaleMetricsBirdeye.$inferSelect;
+export type NewWhaleMetricsBirdeyeRow = typeof whaleMetricsBirdeye.$inferInsert;
