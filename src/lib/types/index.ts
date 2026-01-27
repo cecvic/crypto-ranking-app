@@ -385,6 +385,29 @@ export interface BirdeyeTrade {
   volumeUsd: number;
 }
 
+// Birdeye whale trade from /defi/v3/trades/token-by-volume
+// Uses same structure as BirdeyeTrade but distinct type for clarity
+export interface BirdeyeWhaleTrade {
+  txHash: string;
+  blockTime: number;
+  source: string;
+  side: 'buy' | 'sell';
+  tokenAddress: string;
+  amount: number;
+  priceUsd: number;
+  volumeUsd: number;
+}
+
+// Aggregated whale metrics
+export interface WhaleMetricsAggregated {
+  buyVolume24h: number;
+  sellVolume24h: number;
+  buyCount24h: number;
+  sellCount24h: number;
+  netFlow24h: number;
+  largestTrade24h: number;
+}
+
 export interface BirdeyeSecurityInfo {
   isToken2022: boolean;
   freezeAuthority: string | null;
