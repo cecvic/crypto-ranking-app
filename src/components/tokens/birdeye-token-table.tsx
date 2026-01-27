@@ -2,7 +2,10 @@
 
 import React, { useState } from 'react';
 import { useBirdeyeTokens } from '@/hooks/use-birdeye-tokens';
+import { useActivityRankings, ActivityRankedToken } from '@/hooks/use-activity-rankings';
 import { ChainSelector } from './chain-selector';
+import { ActivityScoreBadge } from './activity-score-badge';
+import { OpportunityScoreBadge } from './opportunity-score-badge';
 import { BirdeyeTokenResponse } from '@/lib/types';
 import {
   Table,
@@ -12,9 +15,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+type SortBy = 'activityScore' | 'opportunityScore' | 'marketCap' | 'volume24h';
 
 interface BirdeyeTokenTableProps {
   initialChain?: string;
@@ -54,7 +66,30 @@ function formatPercentChange(change: number | null): React.ReactElement {
   );
 }
 
-function TokenRow({ token }: { token: BirdeyeTokenResponse }) {
+// Unified token type for both data sources
+interface DisplayToken {
+  address: string;
+  chain: string;
+  symbol: string;
+  name: string;
+  logoUri: string | null;
+  price: number | null;
+  priceChange24h: number | null;
+  volume24h: number | null;
+  marketCap: number | null;
+  activityScore?: number | null;
+  opportunityScore?: number | null;
+  trade24h?: number | null;
+  uniqueWallet24h?: number | null;
+  liquidity?: number | null;
+}
+
+interface TokenRowProps {
+  token: DisplayToken;
+  showActivityScores: boolean;
+}
+
+function TokenRow({ token, showActivityScores }: TokenRowProps) {
   return (
     <TableRow>
       <TableCell>
@@ -98,11 +133,34 @@ function TokenRow({ token }: { token: BirdeyeTokenResponse }) {
       <TableCell className="text-right font-mono">
         {formatVolume(token.marketCap)}
       </TableCell>
+      {showActivityScores && (
+        <>
+          <TableCell className="text-center">
+            <ActivityScoreBadge
+              score={token.activityScore ?? null}
+              trade24h={token.trade24h ?? null}
+              uniqueWallet24h={token.uniqueWallet24h ?? null}
+            />
+          </TableCell>
+          <TableCell className="text-center">
+            <OpportunityScoreBadge
+              score={token.opportunityScore ?? null}
+              activityScore={token.activityScore ?? null}
+              liquidity={token.liquidity ?? null}
+            />
+          </TableCell>
+        </>
+      )}
     </TableRow>
   );
 }
 
-function LoadingSkeleton() {
+interface LoadingSkeletonProps {
+  showActivityScores: boolean;
+}
+
+function LoadingSkeleton({ showActivityScores }: LoadingSkeletonProps) {
+  const colCount = showActivityScores ? 8 : 6;
   return (
     <>
       {[...Array(10)].map((_, i) => (
@@ -121,25 +179,77 @@ function LoadingSkeleton() {
           <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
           <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
           <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+          {showActivityScores && (
+            <>
+              <TableCell><Skeleton className="h-6 w-16 mx-auto" /></TableCell>
+              <TableCell><Skeleton className="h-6 w-16 mx-auto" /></TableCell>
+            </>
+          )}
         </TableRow>
       ))}
     </>
   );
 }
 
+const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+  { value: 'activityScore', label: 'Activity Score' },
+  { value: 'opportunityScore', label: 'Opportunity Score' },
+  { value: 'marketCap', label: 'Market Cap' },
+  { value: 'volume24h', label: 'Volume (24h)' },
+];
+
 export function BirdeyeTokenTable({ initialChain, limit = 100 }: BirdeyeTokenTableProps) {
   const [chain, setChain] = useState<string | undefined>(initialChain);
+  // Default to activity score sorting (RANK-01 requirement)
+  const [sortBy, setSortBy] = useState<SortBy>('activityScore');
 
-  const { data, isLoading, error, isFetching } = useBirdeyeTokens({
+  // Use activity rankings for activity/opportunity sorts
+  const useActivityData = sortBy === 'activityScore' || sortBy === 'opportunityScore';
+
+  // Fetch activity-ranked data
+  const activityQuery = useActivityRankings({
     chain,
     limit,
-    sortBy: 'marketCap',
   });
+
+  // Fetch standard birdeye data for market cap / volume sorts
+  const birdeyeQuery = useBirdeyeTokens({
+    chain,
+    limit,
+    sortBy: sortBy === 'volume24h' ? 'volume24h' : 'marketCap',
+  });
+
+  // Select active query based on sort mode
+  const activeQuery = useActivityData ? activityQuery : birdeyeQuery;
+  const { data, isLoading, error, isFetching } = activeQuery;
+
+  // Convert data to unified display format
+  const displayTokens: DisplayToken[] = (data?.data || []).map((token) => ({
+    address: token.address,
+    chain: token.chain,
+    symbol: token.symbol,
+    name: token.name,
+    logoUri: token.logoUri,
+    price: token.price,
+    priceChange24h: token.priceChange24h,
+    volume24h: token.volume24h,
+    marketCap: token.marketCap,
+    activityScore: useActivityData ? (token as ActivityRankedToken).activityScore : undefined,
+    opportunityScore: useActivityData ? (token as ActivityRankedToken).opportunityScore : undefined,
+    trade24h: useActivityData ? (token as ActivityRankedToken).trade24h : undefined,
+    uniqueWallet24h: useActivityData ? (token as ActivityRankedToken).uniqueWallet24h : undefined,
+    liquidity: useActivityData ? (token as ActivityRankedToken).liquidity : undefined,
+  }));
+
+  // Sort by opportunity score if selected (API returns by activity score by default)
+  const sortedTokens = sortBy === 'opportunityScore'
+    ? [...displayTokens].sort((a, b) => (b.opportunityScore ?? 0) - (a.opportunityScore ?? 0))
+    : displayTokens;
 
   return (
     <div className="space-y-4">
       {/* Header with controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <h2 className="text-lg font-semibold">Token Rankings</h2>
           {data && (
@@ -149,6 +259,19 @@ export function BirdeyeTokenTable({ initialChain, limit = 100 }: BirdeyeTokenTab
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* Sort selector */}
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortBy)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <ChainSelector
             value={chain}
             onChange={setChain}
@@ -168,7 +291,7 @@ export function BirdeyeTokenTable({ initialChain, limit = 100 }: BirdeyeTokenTab
       )}
 
       {/* Table */}
-      <div className="rounded-lg border">
+      <div className="rounded-lg border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -178,20 +301,30 @@ export function BirdeyeTokenTable({ initialChain, limit = 100 }: BirdeyeTokenTab
               <TableHead className="text-right">24h Change</TableHead>
               <TableHead className="text-right">Volume (24h)</TableHead>
               <TableHead className="text-right">Market Cap</TableHead>
+              {useActivityData && (
+                <>
+                  <TableHead className="text-center">Activity</TableHead>
+                  <TableHead className="text-center">Opportunity</TableHead>
+                </>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <LoadingSkeleton />
-            ) : data?.data.length === 0 ? (
+              <LoadingSkeleton showActivityScores={useActivityData} />
+            ) : sortedTokens.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={useActivityData ? 8 : 6} className="text-center py-8 text-muted-foreground">
                   No tokens found. Try a different chain or check back later.
                 </TableCell>
               </TableRow>
             ) : (
-              data?.data.map((token) => (
-                <TokenRow key={`${token.chain}-${token.address}`} token={token} />
+              sortedTokens.map((token) => (
+                <TokenRow
+                  key={`${token.chain}-${token.address}`}
+                  token={token}
+                  showActivityScores={useActivityData}
+                />
               ))
             )}
           </TableBody>
