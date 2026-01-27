@@ -3,8 +3,6 @@
  * Uses percentile normalization for outlier robustness in token metrics
  */
 
-import { quantileRank } from 'simple-statistics';
-
 /**
  * Token metrics used for building percentile lookups
  */
@@ -79,11 +77,23 @@ export function percentileRank(value: number, sortedArray: number[]): number {
     return 0;
   }
 
-  // Use simple-statistics quantileRank which returns 0-1
-  const rank = quantileRank(sortedArray, value);
+  // Binary search to find position in sorted array
+  // Returns the proportion of values that are less than or equal to the value
+  let low = 0;
+  let high = sortedArray.length;
 
-  // Convert to 0-100 scale
-  return Math.round(rank * 100);
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (sortedArray[mid] <= value) {
+      low = mid + 1;
+    } else {
+      high = mid;
+    }
+  }
+
+  // low is now the number of elements <= value
+  // Return as percentage (0-100)
+  return Math.round((low / sortedArray.length) * 100);
 }
 
 /**

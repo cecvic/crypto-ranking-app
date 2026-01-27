@@ -177,3 +177,122 @@ export async function getTokenCountByChain(): Promise<Record<BirdeyeChain, numbe
 
   return result as Record<BirdeyeChain, number>;
 }
+
+// ============================================
+// ACTIVITY DATA OPERATIONS
+// ============================================
+
+/**
+ * Data for updating token activity metrics
+ */
+export interface ActivityUpdateData {
+  trade24h?: number | null;
+  uniqueWallet24h?: number | null;
+  buy24h?: number | null;
+  sell24h?: number | null;
+  activityScore?: number | null;
+  opportunityScore?: number | null;
+}
+
+/**
+ * Get tokens for scoring with metrics needed to build percentile lookups
+ * Returns tokens sorted by volume24h DESC (prioritize active tokens)
+ *
+ * @param chain - Optional chain filter; if not provided, returns all chains
+ * @param limit - Maximum tokens to return (default 500)
+ */
+export async function getTokensForScoring(
+  chain?: BirdeyeChain,
+  limit: number = 500
+): Promise<Array<{
+  address: string;
+  chain: string;
+  price: string | null;
+  priceChange24h: string | null;
+  volume24h: string | null;
+  liquidity: string | null;
+  trade24h: number | null;
+  uniqueWallet24h: number | null;
+  buy24h: number | null;
+  sell24h: number | null;
+}>> {
+  const query = getDb().select({
+    address: birdeyeTokens.address,
+    chain: birdeyeTokens.chain,
+    price: birdeyeTokens.price,
+    priceChange24h: birdeyeTokens.priceChange24h,
+    volume24h: birdeyeTokens.volume24h,
+    liquidity: birdeyeTokens.liquidity,
+    trade24h: birdeyeTokens.trade24h,
+    uniqueWallet24h: birdeyeTokens.uniqueWallet24h,
+    buy24h: birdeyeTokens.buy24h,
+    sell24h: birdeyeTokens.sell24h,
+  })
+    .from(birdeyeTokens)
+    .orderBy(desc(birdeyeTokens.volume24h))
+    .limit(limit);
+
+  if (chain) {
+    return query.where(eq(birdeyeTokens.chain, chain));
+  }
+
+  return query;
+}
+
+/**
+ * Update token activity metrics and scores
+ * Uses existing pattern from updateTokenPrices
+ *
+ * @param chain - Token chain
+ * @param address - Token address
+ * @param data - Activity metrics and scores to update
+ */
+export async function updateTokenActivity(
+  chain: BirdeyeChain,
+  address: string,
+  data: ActivityUpdateData
+): Promise<void> {
+  await getDb().update(birdeyeTokens)
+    .set({
+      trade24h: data.trade24h ?? undefined,
+      uniqueWallet24h: data.uniqueWallet24h ?? undefined,
+      buy24h: data.buy24h ?? undefined,
+      sell24h: data.sell24h ?? undefined,
+      activityScore: data.activityScore?.toString() ?? undefined,
+      opportunityScore: data.opportunityScore?.toString() ?? undefined,
+      lastFetchedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(and(
+      eq(birdeyeTokens.chain, chain),
+      eq(birdeyeTokens.address, address)
+    ));
+}
+
+/**
+ * Get tokens sorted by activity score for rankings
+ * Returns tokens with all display-relevant fields
+ *
+ * @param options - Query options (chain filter, pagination)
+ */
+export async function getTokensByActivityScore(
+  options: {
+    chain?: BirdeyeChain;
+    limit?: number;
+    offset?: number;
+  } = {}
+): Promise<BirdeyeTokenRow[]> {
+  const { chain, limit = 100, offset = 0 } = options;
+
+  const query = getDb().select()
+    .from(birdeyeTokens)
+    .orderBy(sql`${birdeyeTokens.activityScore} DESC NULLS LAST`)
+    .limit(limit)
+    .offset(offset);
+
+  if (chain) {
+    return query.where(eq(birdeyeTokens.chain, chain));
+  }
+
+  return query;
+}
