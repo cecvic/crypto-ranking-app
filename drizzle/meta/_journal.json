@@ -15,6 +15,13 @@
       "when": 1768147086426,
       "tag": "0001_amused_boomerang",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1769504745826,
+      "tag": "0002_overconfident_lord_hawal",
+      "breakpoints": true
     }
   ]
 }
