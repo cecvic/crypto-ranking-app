@@ -56,10 +56,12 @@ Plans:
 
 **Goal:** Dashboard shows DEX-sourced whale activity from on-chain trades
 
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (created by /gsd:plan-phase)
+- [ ] 02-01-PLAN.md - Database schema + Birdeye whale trades API function
+- [ ] 02-02-PLAN.md - Whale trade polling cron job + database queries
+- [ ] 02-03-PLAN.md - Whale indicator UI component + API integration
 
 **Requirements:**
 - WHALE-01: App fetches large DEX trades from Birdeye `/defi/v3/trades/token-by-volume` endpoint
@@ -112,3 +114,4 @@ Plans:
 ---
 *Roadmap created: 2026-01-21*
 *Phase 1 planned: 2026-01-22*
+*Phase 2 planned: 2026-01-27*
