@@ -6,6 +6,80 @@ import { whaleMetricsBirdeye, type WhaleMetricsBirdeyeRow } from './schema';
 import { eq, and, desc, inArray } from 'drizzle-orm';
 
 // ============================================
+// WRITE OPERATIONS
+// ============================================
+
+/**
+ * Upsert whale metrics for a token (insert or update on conflict)
+ */
+export async function upsertWhaleMetrics(
+  chain: string,
+  tokenAddress: string,
+  metrics: {
+    buyVolume24h: number;
+    sellVolume24h: number;
+    buyCount24h: number;
+    sellCount24h: number;
+    netFlow24h: number;
+    largestTrade24h: number;
+    whaleScore: number;
+  }
+): Promise<void> {
+  await getDb()
+    .insert(whaleMetricsBirdeye)
+    .values({
+      chain,
+      tokenAddress,
+      buyVolume24h: metrics.buyVolume24h.toFixed(2),
+      sellVolume24h: metrics.sellVolume24h.toFixed(2),
+      buyCount24h: metrics.buyCount24h,
+      sellCount24h: metrics.sellCount24h,
+      netFlow24h: metrics.netFlow24h.toFixed(2),
+      largestTrade24h: metrics.largestTrade24h.toFixed(2),
+      whaleScore: metrics.whaleScore,
+      lastUpdatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: [whaleMetricsBirdeye.chain, whaleMetricsBirdeye.tokenAddress],
+      set: {
+        buyVolume24h: metrics.buyVolume24h.toFixed(2),
+        sellVolume24h: metrics.sellVolume24h.toFixed(2),
+        buyCount24h: metrics.buyCount24h,
+        sellCount24h: metrics.sellCount24h,
+        netFlow24h: metrics.netFlow24h.toFixed(2),
+        largestTrade24h: metrics.largestTrade24h.toFixed(2),
+        whaleScore: metrics.whaleScore,
+        lastUpdatedAt: new Date(),
+      },
+    });
+}
+
+/**
+ * Batch upsert whale metrics for multiple tokens
+ */
+export async function batchUpsertWhaleMetrics(
+  chain: string,
+  metricsMap: Map<string, {
+    buyVolume24h: number;
+    sellVolume24h: number;
+    buyCount24h: number;
+    sellCount24h: number;
+    netFlow24h: number;
+    largestTrade24h: number;
+    whaleScore: number;
+  }>
+): Promise<number> {
+  let updated = 0;
+
+  for (const [tokenAddress, metrics] of metricsMap) {
+    await upsertWhaleMetrics(chain, tokenAddress, metrics);
+    updated++;
+  }
+
+  return updated;
+}
+
+// ============================================
 // QUERY OPERATIONS
 // ============================================
 
@@ -62,25 +136,22 @@ export async function getAllWhaleMetrics(
  * Get whale metrics for multiple tokens (batch query)
  */
 export async function getWhaleMetricsForTokens(
-  tokenKeys: Array<{ chain: string; address: string }>
+  chain: string,
+  tokenAddresses: string[]
 ): Promise<Map<string, WhaleMetricsBirdeyeRow>> {
-  if (tokenKeys.length === 0) {
+  if (tokenAddresses.length === 0) {
     return new Map();
   }
 
-  // Build unique chain-address pairs
-  const addresses = tokenKeys.map((k) => k.address);
-
-  const metrics = await getDb()
+  const rows = await getDb()
     .select()
     .from(whaleMetricsBirdeye)
-    .where(inArray(whaleMetricsBirdeye.tokenAddress, addresses));
+    .where(
+      and(
+        eq(whaleMetricsBirdeye.chain, chain),
+        inArray(whaleMetricsBirdeye.tokenAddress, tokenAddresses)
+      )
+    );
 
-  // Create a map keyed by chain-address
-  const metricsMap = new Map<string, WhaleMetricsBirdeyeRow>();
-  for (const m of metrics) {
-    metricsMap.set(`${m.chain}-${m.tokenAddress}`, m);
-  }
-
-  return metricsMap;
+  return new Map(rows.map((row) => [row.tokenAddress, row]));
 }
