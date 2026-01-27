@@ -15,6 +15,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { WhaleIndicator } from './whale-indicator';
 
 interface BirdeyeTokenTableProps {
   initialChain?: string;
@@ -95,6 +96,14 @@ function TokenRow({ token }: { token: BirdeyeTokenResponse }) {
       <TableCell className="text-right font-mono">
         {formatVolume(token.volume24h)}
       </TableCell>
+      <TableCell>
+        <WhaleIndicator
+          whaleScore={token.whaleScore}
+          netFlow={token.netFlow24h}
+          buyVolume={token.buyVolume24h}
+          sellVolume={token.sellVolume24h}
+        />
+      </TableCell>
       <TableCell className="text-right font-mono">
         {formatVolume(token.marketCap)}
       </TableCell>
@@ -120,6 +129,7 @@ function LoadingSkeleton() {
           <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
           <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
           <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+          <TableCell><Skeleton className="h-6 w-12" /></TableCell>
           <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
         </TableRow>
       ))}
@@ -177,6 +187,7 @@ export function BirdeyeTokenTable({ initialChain, limit = 100 }: BirdeyeTokenTab
               <TableHead className="text-right">Price</TableHead>
               <TableHead className="text-right">24h Change</TableHead>
               <TableHead className="text-right">Volume (24h)</TableHead>
+              <TableHead>Whale</TableHead>
               <TableHead className="text-right">Market Cap</TableHead>
             </TableRow>
           </TableHeader>
@@ -185,7 +196,7 @@ export function BirdeyeTokenTable({ initialChain, limit = 100 }: BirdeyeTokenTab
               <LoadingSkeleton />
             ) : data?.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   No tokens found. Try a different chain or check back later.
                 </TableCell>
               </TableRow>
