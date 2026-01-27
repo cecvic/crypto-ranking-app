@@ -24,9 +24,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Whale Detection
 
-- [ ] **WHALE-01**: App fetches large DEX trades from Birdeye `/defi/v3/trades/token-by-volume` endpoint
-- [ ] **WHALE-02**: Whale data integrated into existing whale activity score calculation
-- [ ] **WHALE-03**: Dashboard displays DEX-sourced whale activity metrics
+- [x] **WHALE-01**: App fetches large DEX trades from Birdeye `/defi/v3/trades/token-by-volume` endpoint
+- [x] **WHALE-02**: Whale data integrated into existing whale activity score calculation
+- [x] **WHALE-03**: Dashboard displays DEX-sourced whale activity metrics
 
 ### Token Discovery
 
@@ -84,9 +84,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHAIN-02 | Phase 1 | Pending |
 | CHAIN-03 | Phase 1 | Pending |
 | CHAIN-04 | Phase 1 | Pending |
-| WHALE-01 | Phase 2 | Pending |
-| WHALE-02 | Phase 2 | Pending |
-| WHALE-03 | Phase 2 | Pending |
+| WHALE-01 | Phase 2 | Complete |
+| WHALE-02 | Phase 2 | Complete |
+| WHALE-03 | Phase 2 | Complete |
 | DISC-01 | Phase 3 | Pending |
 | DISC-02 | Phase 3 | Pending |
 | DISC-03 | Phase 3 | Pending |
@@ -98,4 +98,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-21*
-*Last updated: 2026-01-21 after roadmap creation*
+*Last updated: 2026-01-27 after Phase 2 completion*
