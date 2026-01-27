@@ -14,17 +14,24 @@ import { getRedis } from '@/lib/cache/redis';
 const tools = { ...cryptoTools, ...defiTools };
 
 // Rate limiter: 10 requests per minute per user
-const ratelimit = new Ratelimit({
-  redis: getRedis(),
-  limiter: Ratelimit.slidingWindow(10, '1 m'),
-  analytics: true,
-  prefix: 'chat-ratelimit',
-});
+// Lazy initialization to avoid build-time env var access
+let _ratelimit: Ratelimit | null = null;
+function getRatelimit(): Ratelimit {
+  if (!_ratelimit) {
+    _ratelimit = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.slidingWindow(10, '1 m'),
+      analytics: true,
+      prefix: 'chat-ratelimit',
+    });
+  }
+  return _ratelimit;
+}
 
 export async function POST(req: Request) {
   // Rate limiting - use IP or user ID
   const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? 'anonymous';
-  const { success, limit, reset, remaining } = await ratelimit.limit(ip);
+  const { success, limit, reset, remaining } = await getRatelimit().limit(ip);
 
   if (!success) {
     return new Response(
