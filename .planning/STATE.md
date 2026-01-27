@@ -4,18 +4,19 @@
 
 **Core Value:** Provide realtime multi-chain crypto rankings with on-chain transaction visibility and liquidity depth
 
-**Current Focus:** Phase 1 - Core Data Pipeline
+**Current Focus:** Phase 2 - Whale Detection
 
 ## Current Position
 
-**Phase:** 1 of 3 - Core Data Pipeline
-**Plan:** 8 of 8 complete
-**Status:** Complete
+**Phase:** 2 of 3 - Whale Detection
+**Plan:** 1 of 3 complete
+**Status:** In progress
+**Last activity:** 2026-01-27 - Completed 02-01-PLAN.md
 
 **Progress:**
 ```
 Phase 1: [########] Core Data Pipeline (8/8 plans) ✓
-Phase 2: [        ] Whale Detection
+Phase 2: [##      ] Whale Detection (1/3 plans)
 Phase 3: [        ] Token Discovery
 ```
 
@@ -24,8 +25,8 @@ Phase 3: [        ] Token Discovery
 | Metric | Value |
 |--------|-------|
 | Phases completed | 1/3 |
-| Plans completed | 8/8 |
-| Requirements delivered | 9/15 |
+| Plans completed | 9/11 |
+| Requirements delivered | 10/15 |
 
 ## Accumulated Context
 
@@ -46,6 +47,8 @@ Phase 3: [        ] Token Discovery
 | React.ReactElement over JSX.Element | React 19 compatibility for component return types | 2026-01-22 |
 | 50 tokens per chain | Birdeye API enforces max 50 per request (not 150 as planned) | 2026-01-22 |
 | Request interceptor for API key | Env vars not available at module load time in Next.js | 2026-01-22 |
+| $100k whale threshold | Default minimum volume for whale trade detection | 2026-01-27 |
+| Separate BirdeyeWhaleTrade type | Distinct type for whale trades vs regular trades for clarity | 2026-01-27 |
 
 ### Technical Todos
 
@@ -64,10 +67,10 @@ Phase 3: [        ] Token Discovery
 
 ## Session Continuity
 
-**Last session:** 2026-01-22
-**Stopped at:** Completed Phase 1 (Core Data Pipeline)
+**Last session:** 2026-01-27
+**Stopped at:** Completed 02-01-PLAN.md (Whale Data Foundation)
 **Resume file:** None
 
 ---
 *State initialized: 2026-01-21*
-*Last updated: 2026-01-22*
+*Last updated: 2026-01-27*
