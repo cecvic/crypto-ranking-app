@@ -9,25 +9,25 @@
 ## Current Position
 
 **Phase:** 4 of 4 - Activity Rankings & Search
-**Plan:** 3 of 4 complete
-**Status:** In progress
-**Last activity:** 2026-01-27 - Completed 04-03-PLAN.md
+**Plan:** 4 of 4 complete
+**Status:** Phase complete
+**Last activity:** 2026-01-27 - Completed 04-04-PLAN.md
 
 **Progress:**
 ```
 Phase 1: [########] Core Data Pipeline (8/8 plans) ✓
 Phase 2: [        ] Whale Detection
 Phase 3: [        ] Token Discovery
-Phase 4: [###     ] Activity Rankings & Search (3/4 plans)
+Phase 4: [########] Activity Rankings & Search (4/4 plans) ✓
 ```
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Phases completed | 1/4 |
-| Plans completed | 11 |
-| Requirements delivered | 11/20 |
+| Phases completed | 2/4 |
+| Plans completed | 12 |
+| Requirements delivered | 13/20 |
 
 ## Accumulated Context
 
@@ -54,6 +54,9 @@ Phase 4: [###     ] Activity Rankings & Search (3/4 plans)
 | 50 tokens per chain for activity | Match Birdeye API max per request, ~550 tokens total | 2026-01-27 |
 | 2 minute cache TTL for activity API | Balance freshness with load reduction | 2026-01-27 |
 | Binary search for percentile rank | TypeScript type issue with simple-statistics | 2026-01-27 |
+| Search merge: API over local | API results fresher, local for fast fallback | 2026-01-27 |
+| 300ms search debounce | Balance responsiveness with API efficiency | 2026-01-27 |
+| 5min search cache TTL | Match API response lifetime | 2026-01-27 |
 
 ### Technical Todos
 
@@ -77,7 +80,7 @@ Phase 4: [###     ] Activity Rankings & Search (3/4 plans)
 ## Session Continuity
 
 **Last session:** 2026-01-27
-**Stopped at:** Completed 04-03-PLAN.md (Activity Data Pipeline & API)
+**Stopped at:** Completed 04-04-PLAN.md (Token Search API & UI)
 **Resume file:** None
 
 ---
