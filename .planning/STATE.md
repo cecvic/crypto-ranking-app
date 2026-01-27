@@ -26,7 +26,7 @@ Phase 4: [##      ] Activity Rankings & Search (2/4 plans)
 |--------|-------|
 | Phases completed | 1/4 |
 | Plans completed | 10 |
-| Requirements delivered | 9/20 |
+| Requirements delivered | 11/20 |
 
 ## Accumulated Context
 
@@ -47,6 +47,9 @@ Phase 4: [##      ] Activity Rankings & Search (2/4 plans)
 | React.ReactElement over JSX.Element | React 19 compatibility for component return types | 2026-01-22 |
 | 50 tokens per chain | Birdeye API enforces max 50 per request (not 150 as planned) | 2026-01-22 |
 | Request interceptor for API key | Env vars not available at module load time in Next.js | 2026-01-22 |
+| Percentile weights 30/25/25/20 | Volume, trade, wallet, momentum balance for activity score | 2026-01-27 |
+| Risk multipliers for low liquidity | 0.5x/<$10k, 0.75x/<$50k, 0.9x/<$100k penalizes risky tokens | 2026-01-27 |
+| Healthy ratio bonus +15 | Volume/liquidity 0.5-2.0 indicates sustainable trading | 2026-01-27 |
 
 ### Technical Todos
 
@@ -70,7 +73,7 @@ Phase 4: [##      ] Activity Rankings & Search (2/4 plans)
 ## Session Continuity
 
 **Last session:** 2026-01-27
-**Stopped at:** Completed 04-02-PLAN.md (External Interfaces)
+**Stopped at:** Completed 04-01-PLAN.md (Scoring Libraries & Schema Extension)
 **Resume file:** None
 
 ---
