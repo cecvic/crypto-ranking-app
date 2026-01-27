@@ -263,6 +263,16 @@ export const birdeyeTokens = pgTable('birdeye_tokens', {
   liquidity: decimal('liquidity', { precision: 20, scale: 2 }),
   marketCap: bigint('market_cap', { mode: 'number' }),
 
+  // Activity metrics (from Birdeye Token Overview)
+  trade24h: integer('trade_24h'),
+  uniqueWallet24h: integer('unique_wallet_24h'),
+  buy24h: integer('buy_24h'),
+  sell24h: integer('sell_24h'),
+
+  // Computed scores
+  activityScore: decimal('activity_score', { precision: 5, scale: 2 }),
+  opportunityScore: decimal('opportunity_score', { precision: 5, scale: 2 }),
+
   lastFetchedAt: timestamp('last_fetched_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
@@ -270,6 +280,8 @@ export const birdeyeTokens = pgTable('birdeye_tokens', {
   uniqueIndex('idx_birdeye_tokens_chain_address').on(table.chain, table.address),
   index('idx_birdeye_tokens_chain_volume').on(table.chain, table.volume24h),
   index('idx_birdeye_tokens_chain_marketcap').on(table.chain, table.marketCap),
+  index('idx_birdeye_tokens_activity_score').on(table.activityScore),
+  index('idx_birdeye_tokens_opportunity_score').on(table.opportunityScore),
 ]);
 
 // TypeScript types inferred from schema
