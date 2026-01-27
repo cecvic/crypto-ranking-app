@@ -458,6 +458,12 @@ export interface BirdeyeTokenResponse {
   liquidity: number | null;
   marketCap: number | null;
   lastFetchedAt: string | null;
+
+  // Whale metrics (from whale_metrics_birdeye table)
+  whaleScore: number | null;
+  netFlow24h: number | null;
+  buyVolume24h: number | null;
+  sellVolume24h: number | null;
 }
 
 /**
