@@ -97,6 +97,60 @@ interface BirdeyeSecurityResponse {
   };
 }
 
+// Token Overview response (activity metrics)
+export interface BirdeyeTokenOverviewResponse {
+  success: boolean;
+  data: {
+    address: string;
+    symbol: string;
+    name: string;
+    price: number;
+    priceChange24h: number;
+    volume24h: number;
+    liquidity: number;
+    mc: number;
+    trade24h?: number;
+    trade24hChangePercent?: number;
+    buy24h?: number;
+    sell24h?: number;
+    uniqueWallet24h?: number;
+    uniqueWallet24hChangePercent?: number;
+  };
+}
+
+// Search response structure
+export interface BirdeyeSearchResponse {
+  success: boolean;
+  data: {
+    items: Array<{
+      type: 'token' | 'pair';
+      result: {
+        address: string;
+        symbol: string;
+        name: string;
+        logoURI?: string;
+        decimals?: number;
+        liquidity?: number;
+        volume24h?: number;
+        price?: number;
+      };
+    }>;
+  };
+}
+
+// Simplified search result for external use
+export interface BirdeyeSearchResult {
+  address: string;
+  symbol: string;
+  name: string;
+  logoURI?: string;
+  decimals?: number;
+  liquidity?: number;
+  volume24h?: number;
+  price?: number;
+  chain: BirdeyeChain;
+}
+
 interface BirdeyeTradesResponse {
   success: boolean;
   data: {
@@ -441,6 +495,87 @@ export async function getWhaleTrades(
 }
 
 /**
+ * Get detailed token overview with activity metrics
+ * @param address - Token address
+ * @param chain - Target chain
+ * @returns Token overview data with activity metrics or null on error
+ */
+export async function getTokenOverview(
+  address: string,
+  chain: BirdeyeChain
+): Promise<BirdeyeTokenOverviewResponse['data'] | null> {
+  try {
+    console.log(`[Birdeye] Fetching token overview for ${address} on ${chain}...`);
+
+    const response = await api.get<BirdeyeTokenOverviewResponse>('/defi/token_overview', {
+      params: { address },
+      headers: {
+        'x-chain': chain,
+      },
+    });
+
+    if (!response.data?.success || !response.data?.data) {
+      console.error('[Birdeye] Invalid token overview response structure');
+      return null;
+    }
+
+    console.log(`[Birdeye] Token overview for ${address}: trade24h=${response.data.data.trade24h}, uniqueWallet24h=${response.data.data.uniqueWallet24h}`);
+    return response.data.data;
+  } catch (error) {
+    console.error(`[Birdeye] Error fetching token overview for ${address} on ${chain}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Search tokens by keyword on a specific chain
+ * @param keyword - Search keyword (symbol, name, or address)
+ * @param chain - Target chain
+ * @returns Array of token search results
+ */
+export async function searchTokens(
+  keyword: string,
+  chain: BirdeyeChain
+): Promise<BirdeyeSearchResult[]> {
+  try {
+    console.log(`[Birdeye] Searching tokens for "${keyword}" on ${chain}...`);
+
+    const response = await api.get<BirdeyeSearchResponse>('/defi/v3/search', {
+      params: { keyword },
+      headers: {
+        'x-chain': chain,
+      },
+    });
+
+    if (!response.data?.success || !response.data?.data?.items) {
+      console.error('[Birdeye] Invalid search response structure');
+      return [];
+    }
+
+    // Filter to only token results (not pairs)
+    const tokenResults = response.data.data.items
+      .filter((item) => item.type === 'token')
+      .map((item) => ({
+        address: item.result.address,
+        symbol: item.result.symbol,
+        name: item.result.name,
+        logoURI: item.result.logoURI,
+        decimals: item.result.decimals,
+        liquidity: item.result.liquidity,
+        volume24h: item.result.volume24h,
+        price: item.result.price,
+        chain,
+      }));
+
+    console.log(`[Birdeye] Found ${tokenResults.length} tokens for "${keyword}" on ${chain}`);
+    return tokenResults;
+  } catch (error) {
+    console.error(`[Birdeye] Error searching tokens for "${keyword}" on ${chain}:`, error);
+    return [];
+  }
+}
+
+/**
  * Aggregate whale trades into metrics for scoring
  * @param trades - Array of BirdeyeWhaleTrade objects
  * @returns Aggregated metrics for 24h period
@@ -477,4 +612,70 @@ export function aggregateWhaleTrades(trades: BirdeyeWhaleTrade[]): {
   metrics.netFlow24h = metrics.buyVolume24h - metrics.sellVolume24h;
 
   return metrics;
+}
+
+// Helper to delay between API calls
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Search tokens across all supported chains
+ * @param keyword - Search keyword (symbol, name, or address)
+ * @returns Record of chain -> search results (top 5 per chain)
+ */
+export async function searchAllChains(
+  keyword: string
+): Promise<Record<BirdeyeChain, BirdeyeSearchResult[]>> {
+  const result: Record<BirdeyeChain, BirdeyeSearchResult[]> = {
+    solana: [],
+    ethereum: [],
+    base: [],
+    arbitrum: [],
+    bsc: [],
+    polygon: [],
+    optimism: [],
+    avalanche: [],
+    zksync: [],
+    sui: [],
+    aptos: [],
+  };
+
+  // Process chains in priority order (solana first)
+  const chainOrder: BirdeyeChain[] = [
+    'solana',
+    'ethereum',
+    'base',
+    'arbitrum',
+    'bsc',
+    'polygon',
+    'optimism',
+    'avalanche',
+    'zksync',
+    'sui',
+    'aptos',
+  ];
+
+  console.log(`[Birdeye] Starting cross-chain search for "${keyword}"...`);
+
+  for (let i = 0; i < chainOrder.length; i++) {
+    const chain = chainOrder[i];
+
+    try {
+      const chainResults = await searchTokens(keyword, chain);
+      // Limit to top 5 results per chain
+      result[chain] = chainResults.slice(0, 5);
+    } catch (error) {
+      console.error(`[Birdeye] Error searching ${chain}, skipping:`, error);
+      // Continue to next chain on error
+    }
+
+    // Add delay between chains (except after last chain)
+    if (i < chainOrder.length - 1) {
+      await delay(100);
+    }
+  }
+
+  const totalResults = Object.values(result).reduce((sum, arr) => sum + arr.length, 0);
+  console.log(`[Birdeye] Cross-chain search complete: ${totalResults} results across all chains`);
+
+  return result;
 }

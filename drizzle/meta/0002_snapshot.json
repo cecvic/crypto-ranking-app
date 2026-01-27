@@ -1,5 +1,5 @@
 {
-  "id": "f4de7d84-8af4-4e31-a947-f9ec2a14c5a0",
+  "id": "combined-7f77507d-f4de7d84",
   "prevId": "f515d0f9-8ade-4672-b599-51a6b31dfa3f",
   "version": "7",
   "dialect": "postgresql",
@@ -407,6 +407,42 @@
           "primaryKey": false,
           "notNull": false
         },
+        "trade_24h": {
+          "name": "trade_24h",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unique_wallet_24h": {
+          "name": "unique_wallet_24h",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "buy_24h": {
+          "name": "buy_24h",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sell_24h": {
+          "name": "sell_24h",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "activity_score": {
+          "name": "activity_score",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "opportunity_score": {
+          "name": "opportunity_score",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "last_fetched_at": {
           "name": "last_fetched_at",
           "type": "timestamp with time zone",
@@ -482,6 +518,36 @@
             },
             {
               "expression": "market_cap",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_birdeye_tokens_activity_score": {
+          "name": "idx_birdeye_tokens_activity_score",
+          "columns": [
+            {
+              "expression": "activity_score",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_birdeye_tokens_opportunity_score": {
+          "name": "idx_birdeye_tokens_opportunity_score",
+          "columns": [
+            {
+              "expression": "opportunity_score",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

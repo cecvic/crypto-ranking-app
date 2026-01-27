@@ -4,29 +4,30 @@
 
 **Core Value:** Provide realtime multi-chain crypto rankings with on-chain transaction visibility and liquidity depth
 
-**Current Focus:** Phase 2 - Whale Detection
+**Current Focus:** Phase 4 - Activity Rankings & Search
 
 ## Current Position
 
-**Phase:** 2 of 3 - Whale Detection
-**Plan:** 3 of 3 complete
+**Phase:** 4 of 4 - Activity Rankings & Search
+**Plan:** 4 of 4 complete
 **Status:** Phase complete
-**Last activity:** 2026-01-27 - Completed 02-03-PLAN.md
+**Last activity:** 2026-01-27 - Completed 04-04-PLAN.md
 
 **Progress:**
 ```
 Phase 1: [########] Core Data Pipeline (8/8 plans) ✓
 Phase 2: [######] Whale Detection (3/3 plans) ✓
 Phase 3: [        ] Token Discovery
+Phase 4: [########] Activity Rankings & Search (4/4 plans) ✓
 ```
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Phases completed | 2/3 |
-| Plans completed | 11/11 |
-| Requirements delivered | 12/15 |
+| Phases completed | 3/4 |
+| Plans completed | 15 |
+| Requirements delivered | 16/20 |
 
 ## Accumulated Context
 
@@ -54,6 +55,15 @@ Phase 3: [        ] Token Discovery
 | 20 tokens per chain whale polling | Reduced from 100 due to heavier whale API calls | 2026-01-27 |
 | Green=accumulation, red=distribution | Whale buys indicate bullish, whale sells bearish | 2026-01-27 |
 | $10k neutral threshold | Net flow below $10k considered neutral to avoid noise | 2026-01-27 |
+| Percentile weights 30/25/25/20 | Volume, trade, wallet, momentum balance for activity score | 2026-01-27 |
+| Risk multipliers for low liquidity | 0.5x/<$10k, 0.75x/<$50k, 0.9x/<$100k penalizes risky tokens | 2026-01-27 |
+| Healthy ratio bonus +15 | Volume/liquidity 0.5-2.0 indicates sustainable trading | 2026-01-27 |
+| 50 tokens per chain for activity | Match Birdeye API max per request, ~550 tokens total | 2026-01-27 |
+| 2 minute cache TTL for activity API | Balance freshness with load reduction | 2026-01-27 |
+| Binary search for percentile rank | TypeScript type issue with simple-statistics | 2026-01-27 |
+| Search merge: API over local | API results fresher, local for fast fallback | 2026-01-27 |
+| 300ms search debounce | Balance responsiveness with API efficiency | 2026-01-27 |
+| 5min search cache TTL | Match API response lifetime | 2026-01-27 |
 
 ### Technical Todos
 
@@ -62,6 +72,10 @@ Phase 3: [        ] Token Discovery
 ### Blockers
 
 - None
+
+### Roadmap Evolution
+
+- Phase 4 added: Activity Rankings & Search (tokens ranked by activity/opportunity with global search)
 
 ### Research Flags
 
@@ -73,7 +87,7 @@ Phase 3: [        ] Token Discovery
 ## Session Continuity
 
 **Last session:** 2026-01-27
-**Stopped at:** Completed 02-03-PLAN.md (Whale UI Integration) - Phase 2 complete
+**Stopped at:** Completed 04-04-PLAN.md (Token Search API & UI)
 **Resume file:** None
 
 ---

@@ -3,6 +3,7 @@ import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { QueryProvider } from "@/providers/query-provider";
+import { GlobalSearch } from "@/components/search/global-search";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -30,6 +31,8 @@ export default function RootLayout({
         <body className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}>
           <QueryProvider>
             {children}
+            {/* Global search accessible from all pages via Cmd+K */}
+            <GlobalSearch />
           </QueryProvider>
         </body>
       </html>
