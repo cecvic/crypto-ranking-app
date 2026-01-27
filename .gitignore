@@ -45,3 +45,6 @@ next-env.d.ts
 
 # planning intel (auto-generated, can be regenerated)
 .planning/intel/
+
+# clerk configuration (can include secrets)
+/.clerk/
