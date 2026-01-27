@@ -24,9 +24,9 @@ Phase 3: [        ] Token Discovery
 
 | Metric | Value |
 |--------|-------|
-| Phases completed | 1/3 |
-| Plans completed | 10/11 |
-| Requirements delivered | 10/15 |
+| Phases completed | 2/3 |
+| Plans completed | 11/11 |
+| Requirements delivered | 12/15 |
 
 ## Accumulated Context
 
@@ -52,6 +52,8 @@ Phase 3: [        ] Token Discovery
 | 3-factor whale scoring | Net flow (+/-25pts), transaction count (+15/-5pts), accumulation ratio (+/-10pts) | 2026-01-27 |
 | 20% rate limit headroom for whale cron | Lower priority than price polling (10%), skips if headroom low | 2026-01-27 |
 | 20 tokens per chain whale polling | Reduced from 100 due to heavier whale API calls | 2026-01-27 |
+| Green=accumulation, red=distribution | Whale buys indicate bullish, whale sells bearish | 2026-01-27 |
+| $10k neutral threshold | Net flow below $10k considered neutral to avoid noise | 2026-01-27 |
 
 ### Technical Todos
 
@@ -71,7 +73,7 @@ Phase 3: [        ] Token Discovery
 ## Session Continuity
 
 **Last session:** 2026-01-27
-**Stopped at:** Completed 02-02-PLAN.md (Whale Trade Polling)
+**Stopped at:** Completed 02-03-PLAN.md (Whale UI Integration) - Phase 2 complete
 **Resume file:** None
 
 ---
