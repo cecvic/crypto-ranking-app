@@ -12,7 +12,7 @@ import { RefreshCwIcon } from 'lucide-react';
 
 export default function DashboardPage() {
   const { data: rankings, isLoading: rankingsLoading, dataUpdatedAt } = useRankings({
-    refetchInterval: 60000, // Refetch every minute
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
   const { data: fearGreed, isLoading: fearGreedLoading } = useFearGreed();
 

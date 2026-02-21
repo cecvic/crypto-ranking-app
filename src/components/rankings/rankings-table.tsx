@@ -37,7 +37,7 @@ interface RankingsTableProps {
 }
 
 type CategoryFilter = 'all' | 'meme' | 'ai' | 'defi';
-type SortField = 'rank' | 'price' | 'change24h' | 'score' | 'sentiment' | 'technical' | 'whale' | 'ai';
+type SortField = 'rank' | 'price' | 'change24h' | 'score' | 'sentiment' | 'technical' | 'whale' | 'ai' | 'signal';
 type SortDirection = 'asc' | 'desc';
 
 // Row height for virtual scrolling
@@ -47,8 +47,8 @@ const VIRTUAL_SCROLL_THRESHOLD = 100; // Use virtual scroll when > 100 items
 export function RankingsTable({ rankings, isLoading }: RankingsTableProps) {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
-  const [sortField, setSortField] = useState<SortField>('rank');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [sortField, setSortField] = useState<SortField>('change24h');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const parentRef = useRef<HTMLDivElement>(null);
 
   // Filter and sort rankings
@@ -157,6 +157,12 @@ export function RankingsTable({ rankings, isLoading }: RankingsTableProps) {
           aVal = a.scores.ai ?? 50;
           bVal = b.scores.ai ?? 50;
           break;
+        case 'signal':
+          // Signal strength order: Strong Buy (>=80) > Buy (>=60) > Neutral (>=40) > Sell (>=20) > Strong Sell
+          // Sort by overall score since signal is derived from it
+          aVal = a.scores.overall;
+          bVal = b.scores.overall;
+          break;
         default:
           return 0;
       }
@@ -184,6 +190,7 @@ export function RankingsTable({ rankings, isLoading }: RankingsTableProps) {
         setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
         return field;
       }
+      // Rank defaults ascending (1 is best), everything else descending (higher = better)
       setSortDirection(field === 'rank' ? 'asc' : 'desc');
       return field;
     });
@@ -276,7 +283,7 @@ export function RankingsTable({ rankings, isLoading }: RankingsTableProps) {
                   <SortableHeader field="technical">Technical</SortableHeader>
                   <SortableHeader field="whale">Whale</SortableHeader>
                   <SortableHeader field="ai">AI</SortableHeader>
-                  <TableHead>Signal</TableHead>
+                  <SortableHeader field="signal">Signal</SortableHeader>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -324,7 +331,7 @@ export function RankingsTable({ rankings, isLoading }: RankingsTableProps) {
                 <SortableHeader field="technical">Technical</SortableHeader>
                 <SortableHeader field="whale">Whale</SortableHeader>
                 <SortableHeader field="ai">AI</SortableHeader>
-                <TableHead>Signal</TableHead>
+                <SortableHeader field="signal">Signal</SortableHeader>
               </TableRow>
             </TableHeader>
             <TableBody>
