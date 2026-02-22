@@ -16,21 +16,14 @@ export function getQStashClient(): Client {
   return _client;
 }
 
-// Schedule names for our cron jobs
-export const SCHEDULE_NAMES = {
-  COLLECT_PRICES: 'collect-prices',
-  COLLECT_SENTIMENT: 'collect-sentiment',
-  COMPUTE_RANKINGS: 'compute-rankings',
-  CLEANUP: 'cleanup',
-} as const;
-
-// Cron schedules
-export const CRON_SCHEDULES = {
-  [SCHEDULE_NAMES.COLLECT_PRICES]: '* * * * *',        // Every minute
-  [SCHEDULE_NAMES.COLLECT_SENTIMENT]: '*/15 * * * *',  // Every 15 minutes
-  [SCHEDULE_NAMES.COMPUTE_RANKINGS]: '*/5 * * * *',    // Every 5 minutes
-  [SCHEDULE_NAMES.CLEANUP]: '0 3 * * *',               // Daily at 3 AM
-} as const;
+// All cron schedules managed via QStash
+export const QSTASH_SCHEDULES = [
+  { name: 'collect-prices',     path: '/api/cron/collect-prices',     cron: '*/10 * * * *' },  // Every 10 min
+  { name: 'collect-sentiment',  path: '/api/cron/collect-sentiment',  cron: '*/15 * * * *' },  // Every 15 min
+  { name: 'compute-rankings',   path: '/api/cron/compute-rankings',   cron: '*/5 * * * *'  },  // Every 5 min
+  { name: 'poll-birdeye',       path: '/api/cron/poll-birdeye',       cron: '*/15 * * * *' },  // Every 15 min
+  { name: 'cleanup',            path: '/api/cron/cleanup',            cron: '0 3 * * *'    },  // Daily 3 AM
+] as const;
 
 // Helper to get the base URL for cron endpoints
 export function getCronBaseUrl(): string {
@@ -38,7 +31,6 @@ export function getCronBaseUrl(): string {
   if (!baseUrl) {
     throw new Error('NEXT_PUBLIC_BASE_URL or VERCEL_URL must be set');
   }
-  // Ensure https in production
   if (baseUrl.startsWith('http://') && process.env.NODE_ENV === 'production') {
     return baseUrl.replace('http://', 'https://');
   }
@@ -48,29 +40,49 @@ export function getCronBaseUrl(): string {
   return baseUrl;
 }
 
-// Setup all cron schedules (run once during deployment)
-export async function setupCronSchedules(): Promise<void> {
+// List existing QStash schedules
+export async function listSchedules(): Promise<{ scheduleId: string; destination: string; cron: string }[]> {
+  const client = getQStashClient();
+  const schedules = await client.schedules.list();
+  return schedules.map((s) => ({
+    scheduleId: s.scheduleId,
+    destination: typeof s.destination === 'string' ? s.destination : (s.destination as { url: string }).url,
+    cron: s.cron ?? '',
+  }));
+}
+
+// Remove all existing schedules (clean slate before re-registering)
+export async function removeAllSchedules(): Promise<number> {
+  const client = getQStashClient();
+  const existing = await client.schedules.list();
+  let removed = 0;
+  for (const schedule of existing) {
+    await client.schedules.delete(schedule.scheduleId);
+    removed++;
+  }
+  return removed;
+}
+
+// Register all cron schedules with QStash
+export async function setupCronSchedules(): Promise<{ created: string[]; errors: string[] }> {
   const client = getQStashClient();
   const baseUrl = getCronBaseUrl();
+  const created: string[] = [];
+  const errors: string[] = [];
 
-  const schedules = [
-    { name: SCHEDULE_NAMES.COLLECT_PRICES, path: '/api/cron/collect-prices' },
-    { name: SCHEDULE_NAMES.COLLECT_SENTIMENT, path: '/api/cron/collect-sentiment' },
-    { name: SCHEDULE_NAMES.COMPUTE_RANKINGS, path: '/api/cron/compute-rankings' },
-    { name: SCHEDULE_NAMES.CLEANUP, path: '/api/cron/cleanup' },
-  ];
-
-  for (const schedule of schedules) {
+  for (const schedule of QSTASH_SCHEDULES) {
     try {
       await client.schedules.create({
         destination: `${baseUrl}${schedule.path}`,
-        cron: CRON_SCHEDULES[schedule.name as keyof typeof CRON_SCHEDULES],
+        cron: schedule.cron,
         retries: 3,
       });
-      console.log(`Created schedule: ${schedule.name}`);
+      created.push(`${schedule.name} (${schedule.cron})`);
     } catch (error) {
-      // Schedule might already exist
-      console.log(`Schedule ${schedule.name} may already exist:`, error);
+      const msg = error instanceof Error ? error.message : String(error);
+      errors.push(`${schedule.name}: ${msg}`);
     }
   }
+
+  return { created, errors };
 }
