@@ -29,6 +29,10 @@ import {
   Brain,
   Wallet,
   LayoutGrid,
+  ShieldCheckIcon,
+  MinusCircleIcon,
+  ShieldAlertIcon,
+  ListIcon,
 } from 'lucide-react';
 
 interface RankingsTableProps {
@@ -37,6 +41,7 @@ interface RankingsTableProps {
 }
 
 type CategoryFilter = 'all' | 'meme' | 'ai' | 'defi';
+type SignalFilter = 'all' | 'buy' | 'neutral' | 'sell';
 type SortField = 'rank' | 'price' | 'change24h' | 'score' | 'sentiment' | 'technical' | 'whale' | 'ai';
 type SortDirection = 'asc' | 'desc';
 
@@ -47,8 +52,9 @@ const VIRTUAL_SCROLL_THRESHOLD = 100; // Use virtual scroll when > 100 items
 export function RankingsTable({ rankings, isLoading }: RankingsTableProps) {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
-  const [sortField, setSortField] = useState<SortField>('rank');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [signalFilter, setSignalFilter] = useState<SignalFilter>('buy');
+  const [sortField, setSortField] = useState<SortField>('score');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const parentRef = useRef<HTMLDivElement>(null);
 
   // Filter and sort rankings
@@ -110,6 +116,23 @@ export function RankingsTable({ rankings, isLoading }: RankingsTableProps) {
       });
     }
 
+    // Signal filter (buy zone = score >= 60, sell zone = score < 40)
+    if (signalFilter !== 'all') {
+      filtered = filtered.filter((r) => {
+        const score = r.scores.overall;
+        switch (signalFilter) {
+          case 'buy':
+            return score >= 60;
+          case 'neutral':
+            return score >= 40 && score < 60;
+          case 'sell':
+            return score < 40;
+          default:
+            return true;
+        }
+      });
+    }
+
     // Search filter
     if (search) {
       const searchLower = search.toLowerCase();
@@ -165,7 +188,7 @@ export function RankingsTable({ rankings, isLoading }: RankingsTableProps) {
     });
 
     return filtered;
-  }, [rankings, search, categoryFilter, sortField, sortDirection]);
+  }, [rankings, search, categoryFilter, signalFilter, sortField, sortDirection]);
 
   // Virtual scrolling for large lists
   const useVirtualScroll = filteredRankings.length > VIRTUAL_SCROLL_THRESHOLD;
@@ -237,6 +260,28 @@ export function RankingsTable({ rankings, isLoading }: RankingsTableProps) {
           <TabsTrigger value="defi" className="flex items-center gap-2">
             <Wallet className="w-4 h-4" />
             DeFi
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {/* Signal Filter */}
+      <Tabs value={signalFilter} onValueChange={(v) => setSignalFilter(v as SignalFilter)}>
+        <TabsList className="grid w-full max-w-md grid-cols-4">
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <ListIcon className="w-4 h-4" />
+            All
+          </TabsTrigger>
+          <TabsTrigger value="buy" className="flex items-center gap-2">
+            <ShieldCheckIcon className="w-4 h-4" />
+            Buy Zone
+          </TabsTrigger>
+          <TabsTrigger value="neutral" className="flex items-center gap-2">
+            <MinusCircleIcon className="w-4 h-4" />
+            Neutral
+          </TabsTrigger>
+          <TabsTrigger value="sell" className="flex items-center gap-2">
+            <ShieldAlertIcon className="w-4 h-4" />
+            Sell Zone
           </TabsTrigger>
         </TabsList>
       </Tabs>
