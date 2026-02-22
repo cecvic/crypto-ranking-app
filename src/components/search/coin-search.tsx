@@ -7,7 +7,7 @@ import { SearchIcon, XIcon, TrendingUpIcon, TrendingDownIcon } from 'lucide-reac
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useCoinSearch } from '@/hooks/use-coin-search';
+import { useCoinSearch, SearchResult } from '@/hooks/use-coin-search';
 
 function formatPrice(price: number): string {
   if (price >= 1) return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -29,6 +29,7 @@ export function CoinSearch(): React.ReactElement {
     setIsOpen,
     selectedIndex,
     setSelectedIndex,
+    isLoading,
   } = useCoinSearch();
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -83,7 +84,7 @@ export function CoinSearch(): React.ReactElement {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [setIsOpen]);
 
-  const showNoResults = query.trim().length > 0 && results.length === 0;
+  const showNoResults = query.trim().length > 0 && results.length === 0 && !isLoading;
 
   return (
     <div ref={containerRef} className="relative w-64">
@@ -115,8 +116,8 @@ export function CoinSearch(): React.ReactElement {
       {/* Results dropdown */}
       {isOpen && results.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg z-50 max-h-[400px] overflow-y-auto">
-          {results.map((ranking, index) => {
-            const coin = ranking.coin;
+          {results.map((result, index) => {
+            const coin = result.coin;
             const change = coin.price_change_percentage_24h;
             const isPositive = change >= 0;
 
@@ -172,12 +173,21 @@ export function CoinSearch(): React.ReactElement {
                 </div>
 
                 {/* Rank badge */}
-                <Badge variant="secondary" className="shrink-0 text-xs">
-                  #{ranking.rank}
-                </Badge>
+                {result.rank && (
+                  <Badge variant="secondary" className="shrink-0 text-xs">
+                    #{result.rank}
+                  </Badge>
+                )}
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* Loading state */}
+      {isOpen && results.length === 0 && isLoading && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg z-50 px-3 py-4 text-center text-sm text-muted-foreground">
+          Searching...
         </div>
       )}
 
@@ -292,8 +302,8 @@ export function MobileCoinSearch(): React.ReactElement {
             {/* Results */}
             {results.length > 0 && (
               <div className="border rounded-md overflow-y-auto max-h-[calc(100vh-80px)]">
-                {results.map((ranking, index) => {
-                  const coin = ranking.coin;
+                {results.map((result, index) => {
+                  const coin = result.coin;
                   const change = coin.price_change_percentage_24h;
                   const isPositive = change >= 0;
 
@@ -336,7 +346,9 @@ export function MobileCoinSearch(): React.ReactElement {
                           </span>
                         </div>
                       </div>
-                      <Badge variant="secondary">#{ranking.rank}</Badge>
+                      {result.rank && (
+                        <Badge variant="secondary">#{result.rank}</Badge>
+                      )}
                     </button>
                   );
                 })}

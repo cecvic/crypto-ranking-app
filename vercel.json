@@ -23,7 +23,7 @@
     },
     {
       "path": "/api/cron/poll-birdeye",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 5 * * *"
     }
   ]
 }
