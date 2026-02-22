@@ -2,21 +2,20 @@
 
 import { use } from 'react';
 import { useCoin, useCoinChart } from '@/hooks/use-rankings';
-import { TradingChart } from '@/components/charts/trading-chart';
+import { CoinChart } from '@/components/charts/coin-chart';
 import { ConfluenceRadar } from '@/components/charts/confluence-radar';
+import { TickerTape } from '@/components/tradingview/ticker-tape';
+import { TechnicalAnalysis } from '@/components/tradingview/technical-analysis';
+import { CoinHeader } from '@/components/coin-detail/coin-header';
+import { ScoreCards } from '@/components/coin-detail/score-cards';
+import { MarketStats } from '@/components/coin-detail/market-stats';
+import { AIPredictionsCard } from '@/components/coin-detail/ai-predictions-card';
+import { WhaleActivityCard } from '@/components/coin-detail/whale-activity-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getSignalLabel } from '@/lib/ranking/calculator';
-import Image from 'next/image';
+import { getTradingViewSymbol } from '@/lib/tradingview/symbol-map';
 import Link from 'next/link';
-import {
-  ArrowLeftIcon,
-  ExternalLinkIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
-} from 'lucide-react';
+import { ArrowLeftIcon, ExternalLinkIcon } from 'lucide-react';
 
 interface CoinPageProps {
   params: Promise<{ coinId: string }>;
@@ -38,7 +37,7 @@ export default function CoinPage({ params }: CoinPageProps) {
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">Coin not found</p>
             <Link href="/" className="text-primary hover:underline mt-2 inline-block">
-              ← Back to Dashboard
+              Back to Dashboard
             </Link>
           </CardContent>
         </Card>
@@ -47,274 +46,155 @@ export default function CoinPage({ params }: CoinPageProps) {
   }
 
   const { coin, scores, signals, details } = coinData as any;
-  const signal = getSignalLabel(scores.overall);
-
-  const formatPrice = (price: number) => {
-    if (price >= 1) return `$${price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-    return `$${price.toPrecision(4)}`;
-  };
-
-  const formatLargeNumber = (num: number) => {
-    if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
-    if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
-    if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
-    return `$${num.toLocaleString()}`;
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 70) return 'text-green-500';
-    if (score >= 50) return 'text-yellow-500';
-    return 'text-red-500';
-  };
+  const tvSymbol = getTradingViewSymbol(coinId, coin.symbol);
 
   return (
-    <div className="container py-6 space-y-6">
-      {/* Back Button */}
-      <Link
-        href="/"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeftIcon className="h-4 w-4" />
-        Back to Rankings
-      </Link>
+    <div className="min-h-screen">
+      {/* Ticker Tape */}
+      <TickerTape />
 
-      {/* Coin Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-4">
-          <Image
-            src={coin.image}
-            alt={coin.name}
-            width={64}
-            height={64}
-            className="rounded-full"
+      <div className="container py-6 space-y-6">
+        {/* Back Button */}
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeftIcon className="h-4 w-4" />
+          Back to Rankings
+        </Link>
+
+        {/* Coin Header */}
+        <CoinHeader coin={coin} scores={scores} />
+
+        {/* Chart + Technical Analysis side by side */}
+        <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+          <Card className="overflow-hidden">
+            <CoinChart
+              coinId={coinId}
+              symbol={coin.symbol}
+              chartData={chartData}
+              chartLoading={chartLoading}
+              height={600}
+            />
+          </Card>
+
+          {tvSymbol.isSupported && (
+            <Card className="overflow-hidden">
+              <CardHeader className="pb-0">
+                <CardTitle className="text-lg">Technical Analysis</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <TechnicalAnalysis
+                  symbol={tvSymbol.symbol}
+                  height={540}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Score Cards */}
+        <ScoreCards scores={scores} />
+
+        {/* Confluence Radar + Market Stats */}
+        <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Confluence Radar</CardTitle>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+              <ConfluenceRadar scores={scores} size="lg" />
+            </CardContent>
+          </Card>
+
+          <MarketStats coin={coin} details={details} />
+        </div>
+
+        {/* AI Predictions + Whale Activity */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <AIPredictionsCard
+            ai={signals.ai}
+            aiScore={scores.ai ?? 0}
           />
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold">{coin.name}</h1>
-              <Badge variant="outline" className="text-lg">
-                {coin.symbol}
-              </Badge>
-              <Badge variant="secondary">Rank #{coin.market_cap_rank}</Badge>
-            </div>
-            <div className="flex items-center gap-4 mt-2">
-              <span className="text-2xl font-mono">{formatPrice(coin.current_price)}</span>
-              <span
-                className={`flex items-center gap-1 ${
-                  coin.price_change_percentage_24h >= 0 ? 'text-green-500' : 'text-red-500'
-                }`}
-              >
-                {coin.price_change_percentage_24h >= 0 ? (
-                  <TrendingUpIcon className="h-4 w-4" />
-                ) : (
-                  <TrendingDownIcon className="h-4 w-4" />
-                )}
-                {Math.abs(coin.price_change_percentage_24h).toFixed(2)}%
-              </span>
-            </div>
-          </div>
+          <WhaleActivityCard
+            whale={signals.whale}
+            whaleScore={scores.whale ?? 0}
+          />
         </div>
 
-        {/* Overall Score */}
-        <Card className="text-center px-6 py-4">
-          <div className={`text-4xl font-bold ${getScoreColor(scores.overall)}`}>
-            {scores.overall.toFixed(0)}
-          </div>
-          <Badge
-            variant={signal.color === 'green' || signal.color === 'lime' ? 'default' : 'destructive'}
-            className="mt-2"
-          >
-            {signal.label}
-          </Badge>
-        </Card>
-      </div>
-
-      {/* Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Price Chart</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="7d">
-            <TabsList>
-              <TabsTrigger value="1d">1D</TabsTrigger>
-              <TabsTrigger value="7d">7D</TabsTrigger>
-              <TabsTrigger value="30d">30D</TabsTrigger>
-              <TabsTrigger value="90d">90D</TabsTrigger>
-            </TabsList>
-            <TabsContent value="7d" className="mt-4">
-              {chartLoading ? (
-                <Skeleton className="h-[400px] w-full" />
-              ) : (
-                <TradingChart data={chartData || []} height={400} type="candlestick" />
+        {/* Links */}
+        {details?.links && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Links</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-4">
+              {details.links.homepage && (
+                <Link
+                  href={details.links.homepage}
+                  target="_blank"
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  Website <ExternalLinkIcon className="h-3 w-3" />
+                </Link>
               )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      {/* Confluence Radar + Score Breakdown */}
-      <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
-        {/* Confluence Radar Card */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Confluence Radar</CardTitle>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <ConfluenceRadar scores={scores} size="lg" />
-          </CardContent>
-        </Card>
-
-        {/* Score Breakdown Grid */}
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-5 content-start">
-          <ScoreCard title="Sentiment" score={scores.sentiment} />
-          <ScoreCard title="Technical" score={scores.technical} />
-          <ScoreCard title="Whale Activity" score={scores.whale} />
-          <ScoreCard title="AI Prediction" score={scores.ai} />
-          <ScoreCard title="Price Action" score={scores.pricePerformance} />
-        </div>
+              {details.links.twitter && (
+                <Link
+                  href={details.links.twitter}
+                  target="_blank"
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  Twitter <ExternalLinkIcon className="h-3 w-3" />
+                </Link>
+              )}
+              {details.links.reddit && (
+                <Link
+                  href={details.links.reddit}
+                  target="_blank"
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  Reddit <ExternalLinkIcon className="h-3 w-3" />
+                </Link>
+              )}
+              {details.links.github && (
+                <Link
+                  href={details.links.github}
+                  target="_blank"
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  GitHub <ExternalLinkIcon className="h-3 w-3" />
+                </Link>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
-
-      {/* Market Data */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Market Data</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <DataRow label="Market Cap" value={formatLargeNumber(coin.market_cap)} />
-            <DataRow label="24h Volume" value={formatLargeNumber(coin.total_volume)} />
-            <DataRow label="24h High" value={formatPrice(details?.marketData?.high24h || 0)} />
-            <DataRow label="24h Low" value={formatPrice(details?.marketData?.low24h || 0)} />
-            <DataRow label="All-Time High" value={formatPrice(details?.marketData?.ath || 0)} />
-            <DataRow
-              label="From ATH"
-              value={`${details?.marketData?.athChangePercentage?.toFixed(2)}%`}
-              valueColor="text-red-500"
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Supply Info</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <DataRow
-              label="Circulating Supply"
-              value={details?.marketData?.circulatingSupply?.toLocaleString() || '--'}
-            />
-            <DataRow
-              label="Total Supply"
-              value={details?.marketData?.totalSupply?.toLocaleString() || '--'}
-            />
-            <DataRow
-              label="Max Supply"
-              value={details?.marketData?.maxSupply?.toLocaleString() || 'Unlimited'}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Links */}
-      {details?.links && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Links</CardTitle>
-          </CardHeader>
-          <CardContent className="flex gap-4">
-            {details.links.homepage && (
-              <Link
-                href={details.links.homepage}
-                target="_blank"
-                className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-              >
-                Website <ExternalLinkIcon className="h-3 w-3" />
-              </Link>
-            )}
-            {details.links.twitter && (
-              <Link
-                href={details.links.twitter}
-                target="_blank"
-                className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-              >
-                Twitter <ExternalLinkIcon className="h-3 w-3" />
-              </Link>
-            )}
-            {details.links.reddit && (
-              <Link
-                href={details.links.reddit}
-                target="_blank"
-                className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-              >
-                Reddit <ExternalLinkIcon className="h-3 w-3" />
-              </Link>
-            )}
-            {details.links.github && (
-              <Link
-                href={details.links.github}
-                target="_blank"
-                className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-              >
-                GitHub <ExternalLinkIcon className="h-3 w-3" />
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-function ScoreCard({ title, score }: { title: string; score: number }) {
-  const getColor = (s: number) => {
-    if (s >= 70) return 'text-green-500 bg-green-500/10';
-    if (s >= 50) return 'text-yellow-500 bg-yellow-500/10';
-    return 'text-red-500 bg-red-500/10';
-  };
-
-  return (
-    <Card className={getColor(score)}>
-      <CardContent className="py-4 text-center">
-        <div className="text-2xl font-bold">{score.toFixed(0)}</div>
-        <div className="text-sm font-medium mt-1">{title}</div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function DataRow({
-  label,
-  value,
-  valueColor,
-}: {
-  label: string;
-  value: string;
-  valueColor?: string;
-}) {
-  return (
-    <div className="flex justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={`font-medium ${valueColor || ''}`}>{value}</span>
     </div>
   );
 }
 
 function CoinPageSkeleton() {
   return (
-    <div className="container py-6 space-y-6">
-      <Skeleton className="h-4 w-32" />
-      <div className="flex items-center gap-4">
-        <Skeleton className="h-16 w-16 rounded-full" />
-        <div>
-          <Skeleton className="h-8 w-48 mb-2" />
-          <Skeleton className="h-6 w-32" />
+    <div className="min-h-screen">
+      <Skeleton className="h-[46px] w-full" />
+      <div className="container py-6 space-y-6">
+        <Skeleton className="h-4 w-32" />
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-16 w-16 rounded-full" />
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-6 w-32" />
+          </div>
         </div>
-      </div>
-      <Skeleton className="h-[400px] w-full" />
-      <div className="grid gap-4 md:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-24" />
-        ))}
+        <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+          <Skeleton className="h-[600px]" />
+          <Skeleton className="h-[600px]" />
+        </div>
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-20" />
+          ))}
+        </div>
       </div>
     </div>
   );
