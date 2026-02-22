@@ -4,7 +4,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { UserButton } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
-import { GlobalSearch } from '@/components/search/global-search';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,12 +11,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  SearchIcon,
   BellIcon,
   MenuIcon,
   BotIcon,
   CoinsIcon,
 } from 'lucide-react';
+import { CoinSearch, MobileCoinSearch } from '@/components/search/coin-search';
 
 export function DashboardHeader() {
   return (
@@ -79,28 +78,12 @@ export function DashboardHeader() {
 
         {/* Search */}
         <div className="flex-1 flex items-center justify-end gap-4">
-          {/* Search trigger button - opens GlobalSearch dialog */}
-          <button
-            onClick={() => {
-              // Dispatch keyboard event to trigger Cmd+K
-              const event = new KeyboardEvent('keydown', {
-                key: 'k',
-                metaKey: true,
-                bubbles: true,
-              });
-              document.dispatchEvent(event);
-            }}
-            className="relative hidden sm:flex items-center gap-2 w-64 h-9 px-3 text-sm text-muted-foreground border rounded-md bg-background hover:bg-accent transition-colors"
-          >
-            <SearchIcon className="h-4 w-4" />
-            <span>Search tokens...</span>
-            <kbd className="ml-auto pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium sm:flex">
-              <span className="text-xs">&#8984;</span>K
-            </kbd>
-          </button>
-
-          {/* GlobalSearch handles its own state and Cmd+K listener */}
-          <GlobalSearch />
+          <div className="hidden sm:block">
+            <CoinSearch />
+          </div>
+          <div className="sm:hidden">
+            <MobileCoinSearch />
+          </div>
 
           {/* AI Chat Button - prominent placement with glow effect */}
           <Button
