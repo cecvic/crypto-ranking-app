@@ -75,6 +75,26 @@ export async function getLatestSnapshot(): Promise<{
   return { snapshot: latestSnapshot, rankings };
 }
 
+export interface RankingsWithTimestamp {
+  rankings: CoinRanking[];
+  snapshotTime: Date | null;
+}
+
+export async function getLatestRankingsWithTimestamp(): Promise<RankingsWithTimestamp> {
+  // Get the actual snapshot time from DB
+  const snapshots = await getDb()
+    .select({ snapshotTime: rankingSnapshots.snapshotTime })
+    .from(rankingSnapshots)
+    .orderBy(desc(rankingSnapshots.snapshotTime))
+    .limit(1);
+
+  const rankings = await getLatestRankingsWithChanges();
+  return {
+    rankings,
+    snapshotTime: snapshots[0]?.snapshotTime ?? null,
+  };
+}
+
 export async function getLatestRankingsWithChanges(): Promise<CoinRanking[]> {
   // Get current and previous snapshots
   const snapshots = await getDb()

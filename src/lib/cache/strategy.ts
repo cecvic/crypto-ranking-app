@@ -10,7 +10,7 @@ import {
   checkRedisConnection,
 } from './redis';
 import {
-  getLatestRankingsWithChanges,
+  getLatestRankingsWithTimestamp,
   createSnapshot,
   getCachedData,
   setCachedData,
@@ -36,15 +36,21 @@ export async function getCachedRankings(): Promise<CachedRankings | null> {
 
   // L2: Fallback to PostgreSQL
   try {
-    const rankings = await getLatestRankingsWithChanges();
+    const { rankings, snapshotTime } = await getLatestRankingsWithTimestamp();
     if (rankings.length > 0) {
-      const data: CachedRankings = {
-        rankings,
-        timestamp: new Date().toISOString(),
-      };
+      // Use the REAL snapshot timestamp, not now — prevents stale DB data
+      // from being treated as fresh and blocking new CoinGecko fetches
+      const timestamp = snapshotTime
+        ? snapshotTime.toISOString()
+        : rankings[0].updatedAt;
 
-      // Warm Redis cache for next request
-      await setCached(CACHE_KEYS.RANKINGS_LATEST, data, CACHE_TTL.RANKINGS_LATEST);
+      const data: CachedRankings = { rankings, timestamp };
+
+      // Only warm Redis if data is reasonably recent (< 10 min)
+      const ageMs = Date.now() - new Date(timestamp).getTime();
+      if (ageMs < 600_000) {
+        await setCached(CACHE_KEYS.RANKINGS_LATEST, data, CACHE_TTL.RANKINGS_LATEST);
+      }
 
       return data;
     }
@@ -183,8 +189,8 @@ export async function checkCacheHealth(): Promise<CacheHealth> {
   const [redisOk, postgresOk] = await Promise.all([
     checkRedisConnection(),
     // Simple check - if we can get cached rankings, postgres is working
-    getLatestRankingsWithChanges()
-      .then((r) => r.length >= 0)
+    getLatestRankingsWithTimestamp()
+      .then((r) => r.rankings.length >= 0)
       .catch(() => false),
   ]);
 
