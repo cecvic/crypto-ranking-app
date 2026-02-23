@@ -180,10 +180,10 @@ function TokenRow({ token, showActivityScores }: TokenRowProps) {
       </TableCell>
       <TableCell>
         <WhaleIndicator
-          whaleScore={token.whaleScore}
-          netFlow={token.netFlow24h}
-          buyVolume={token.buyVolume24h}
-          sellVolume={token.sellVolume24h}
+          whaleScore={token.whaleScore ?? null}
+          netFlow={token.netFlow24h ?? null}
+          buyVolume={token.buyVolume24h ?? null}
+          sellVolume={token.sellVolume24h ?? null}
         />
       </TableCell>
       <TableCell className="text-right font-mono">
